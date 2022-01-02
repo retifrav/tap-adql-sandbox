@@ -5,27 +5,53 @@ import pyvo
 import pandas
 from tabulate import tabulate
 
+from .version import __version__
 from . import applicationPath, settingsFile, mainWindowID
 from .theme import (
     getGlobalFont,
     getGlobalTheme,
     getErrorTheme,
+    getAboutTheme,
     styleHorizontalPadding,
     styleScrollbarWidth
 )
-from .version import __version__
+from .examples import examplesList
 
 debugMode = False
+
+
+def showLoading(isLoading):
+    if isLoading:
+        dpg.configure_item("btnExecuteQuery", show=False)
+        dpg.configure_item("loadingAnimation", show=True)
+    else:
+        dpg.configure_item("loadingAnimation", show=False)
+        dpg.configure_item("btnExecuteQuery", show=True)
 
 
 def executeQuery():
     dpg.configure_item("queryResults", show=False)
     dpg.configure_item("errorMessage", show=False)
-    serviceURL = dpg.get_value("serviceURL")
-    queryText = dpg.get_value("queryText")
+    dpg.set_value("errorMessage", "")
+    showLoading(True)
+
+    serviceURL = dpg.get_value("serviceURL").strip()
+    queryText = dpg.get_value("queryText").strip()
+
+    if not serviceURL:
+        dpg.set_value("errorMessage", "No service URL provided")
+        dpg.configure_item("errorMessage", show=True)
+        showLoading(False)
+        return
+
+    if not queryText:
+        dpg.set_value("errorMessage", "Cannot execute an empty query")
+        dpg.configure_item("errorMessage", show=True)
+        showLoading(False)
+        return
 
     if debugMode:
-        print(f"[DEBUG] Query to execute:\n{queryText}")
+        print(f"\n[DEBUG] Query to execute:\n{queryText}")
 
     results = {}
     try:
@@ -34,10 +60,11 @@ def executeQuery():
     except Exception as ex:
         dpg.set_value("errorMessage", ex)
         dpg.configure_item("errorMessage", show=True)
+        showLoading(False)
         return
 
     if debugMode:
-        print("Results found:", len(results))
+        print("\n[DEBUG] Results found:", len(results))
         print(
             tabulate(
                 results.to_table(),
@@ -46,6 +73,12 @@ def executeQuery():
             )
         )
     dpg.configure_item("queryResults", show=True)
+    showLoading(False)
+
+
+def preFillExample(sender, app_data, user_data):
+    dpg.set_value("serviceURL", examplesList[user_data]["serviceURL"])
+    dpg.set_value("queryText", examplesList[user_data]["queryText"])
 
 
 def main():
@@ -117,12 +150,14 @@ def main():
             with dpg.menu(label="Help"):
                 with dpg.menu(label="Examples"):
                     dpg.add_menu_item(
-                        label="Query to exoplanet.eu",
-                        callback=lambda: print("ololo")
+                        label="exoplanet.eu",
+                        user_data="exoplanet.eu",
+                        callback=preFillExample
                     )
                     dpg.add_menu_item(
-                        label="Query to NASA",
-                        callback=lambda: print("ololo")
+                        label="NASA",
+                        user_data="NASA",
+                        callback=preFillExample
                     )
                 dpg.add_spacer()
                 dpg.add_separator()
@@ -148,7 +183,18 @@ def main():
             multiline=True,
             tab_input=True
         )
-        dpg.add_button(label="Execute query", callback=executeQuery)
+        dpg.add_button(
+            tag="btnExecuteQuery",
+            label="Execute query",
+            callback=executeQuery
+        )
+        dpg.add_loading_indicator(
+            tag="loadingAnimation",
+            radius=2,
+            speed=3,
+            indent=10,
+            show=False
+        )
 
         dpg.add_spacer()
 
@@ -173,15 +219,15 @@ def main():
         no_title_bar=False
         # no_scrollbar=True
     ):
-        dpg.add_text(f"Version: {__version__}")
         dpg.add_text(
-            " ".join((
-                "Description: A sandbox application for executing",
-                "ADQL queries\nvia TAP interface of various data sources,",
-                "such as astronomical\ndatabases.",
-                "Essentially, it's just a GUI for PyVO."
+            "".join((
+                "A sandbox application for executing ",
+                "ADQL queries via TAP interface\nof various data sources, ",
+                "such as astronomical databases, using PyVO.\n",
+                "Essentially, this is a GUI for PyVO."
             ))
         )
+        dpg.add_text(f"Version: {__version__}")
         dpg.add_text(f"Source code: https://github.com/retifrav/tap-adql-sandbox")
         dpg.add_text(f"License: GPLv3")
         dpg.add_spacer()
@@ -200,10 +246,12 @@ def main():
             label="Close",
             callback=lambda: dpg.configure_item("about", show=False)
         )
+        dpg.add_spacer(height=2)
 
     dpg.bind_font(getGlobalFont())
     dpg.bind_theme(getGlobalTheme())
     dpg.bind_item_theme("errorMessage", getErrorTheme())
+    dpg.bind_item_theme("about", getAboutTheme())
 
     # FIXME https://github.com/hoffstadt/DearPyGui/issues/639
     dpg.create_viewport(

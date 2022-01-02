@@ -161,3 +161,14 @@ def getErrorTheme():
                 category=dpg.mvThemeCat_Core
             )
     return errorTheme
+
+
+def getAboutTheme():
+    with dpg.theme() as aboutTheme:
+        with dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_style(
+                dpg.mvStyleVar_WindowPadding,
+                styleHorizontalPadding, 4,
+                category=dpg.mvThemeCat_Core
+            )
+    return aboutTheme
