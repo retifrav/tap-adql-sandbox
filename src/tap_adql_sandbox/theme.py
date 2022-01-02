@@ -10,16 +10,16 @@ styleHorizontalPadding = 12
 styleScrollbarWidth = 16
 
 
-def setTheme():
-    # --- fonts
+def getGlobalFont():
     with dpg.font_registry():
-        default_font = dpg.add_font(
+        globalFont = dpg.add_font(
             applicationPath / "fonts" / "JetBrainsMono-Thin.ttf", 24
         )
-        dpg.bind_font(default_font)
+        return globalFont
 
-    # --- theme
-    with dpg.theme() as meTheme:
+
+def getGlobalTheme():
+    with dpg.theme() as globalTheme:
         with dpg.theme_component(dpg.mvAll):
             dpg.add_theme_style(
                 dpg.mvStyleVar_WindowPadding,
@@ -149,4 +149,15 @@ def setTheme():
                 category=dpg.mvThemeCat_Core
             )
 
-    dpg.bind_theme(meTheme)
+    return globalTheme
+
+
+def getErrorTheme():
+    with dpg.theme() as errorTheme:
+        with dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_color(
+                dpg.mvThemeCol_Text,
+                (255, 0, 0),
+                category=dpg.mvThemeCat_Core
+            )
+    return errorTheme

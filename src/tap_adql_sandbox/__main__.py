@@ -1,14 +1,55 @@
 import dearpygui.dearpygui as dpg
 import pathlib
 import argparse
+import pyvo
+import pandas
+from tabulate import tabulate
 
 from . import applicationPath, settingsFile, mainWindowID
-from . import functions as backend
-from .theme import setTheme, styleHorizontalPadding, styleScrollbarWidth
+from .theme import (
+    getGlobalFont,
+    getGlobalTheme,
+    getErrorTheme,
+    styleHorizontalPadding,
+    styleScrollbarWidth
+)
 from .version import __version__
+
+debugMode = False
+
+
+def executeQuery():
+    dpg.configure_item("queryResults", show=False)
+    dpg.configure_item("errorMessage", show=False)
+    serviceURL = dpg.get_value("serviceURL")
+    queryText = dpg.get_value("queryText")
+
+    if debugMode:
+        print(f"[DEBUG] Query to execute:\n{queryText}")
+
+    results = {}
+    try:
+        service = pyvo.dal.TAPService(serviceURL)
+        results = service.search(queryText)
+    except Exception as ex:
+        dpg.set_value("errorMessage", ex)
+        dpg.configure_item("errorMessage", show=True)
+        return
+
+    if debugMode:
+        print("Results found:", len(results))
+        print(
+            tabulate(
+                results.to_table(),
+                headers=results.fieldnames,
+                tablefmt="psql"
+            )
+        )
+    dpg.configure_item("queryResults", show=True)
 
 
 def main():
+    global debugMode
     argParser = argparse.ArgumentParser(
         prog="tap-adql-sandbox",
         description=" ".join((
@@ -32,12 +73,14 @@ def main():
     cliArgs = argParser.parse_args()
     # print(cliArgs)
 
+    debugMode = cliArgs.debug
+
     dpg.create_context()
 
     dpg.configure_app(init_file=settingsFile)
 
-    # dpg.set_frame_callback(2, callback=backend.updateGeometry)
-    # dpg.set_viewport_resize_callback(callback=backend.updateGeometry)
+    # dpg.set_frame_callback(2, callback=updateGeometry)
+    # dpg.set_viewport_resize_callback(callback=updateGeometry)
     dpg.set_exit_callback(callback=lambda: dpg.save_init_file(settingsFile))
 
     #
@@ -56,7 +99,7 @@ def main():
             with dpg.menu(label="File"):
                 dpg.add_menu_item(label="Exit", callback=lambda: dpg.stop_dearpygui())
 
-            if cliArgs.debug:
+            if debugMode:
                 with dpg.menu(label="Dev"):
                     dpg.add_menu_item(
                         label="Items registry",
@@ -91,17 +134,34 @@ def main():
         #
         # -- contents
         #
+        dpg.add_input_text(tag="serviceURL", hint="TAP service")
         dpg.add_input_text(
-            tag="query",
-            # hint="ADQL query", # FIXME doesn't work
+            tag="queryText",
+            hint="ADQL query",  # FIXME doesn't work
+            default_value="".join((
+                "SELECT TOP 11 *\n",
+                "FROM some_table\n",
+                "WHERE some_thing = 1"
+            )),
             # width=700,
             height=350,
             multiline=True,
             tab_input=True
         )
-        dpg.add_button(label="Execute query", callback=lambda: print("ololo"))
+        dpg.add_button(label="Execute query", callback=executeQuery)
 
-        dpg.add_text("Query results")
+        dpg.add_spacer()
+
+        dpg.add_text(
+            tag="queryResults",
+            default_value="Query results",
+            show=False
+        )
+        dpg.add_text(
+            tag="errorMessage",
+            default_value="Error",
+            show=False
+        )
     #
     # --- about window
     #
@@ -141,7 +201,9 @@ def main():
             callback=lambda: dpg.configure_item("about", show=False)
         )
 
-    setTheme()
+    dpg.bind_font(getGlobalFont())
+    dpg.bind_theme(getGlobalTheme())
+    dpg.bind_item_theme("errorMessage", getErrorTheme())
 
     # FIXME https://github.com/hoffstadt/DearPyGui/issues/639
     dpg.create_viewport(
@@ -164,7 +226,11 @@ def main():
         # print(f"widths before: {mainWindowWidth} | {styleHorizontalPadding} | {styleScrollbarWidth}")
         # FIXME https://github.com/hoffstadt/DearPyGui/discussions/1517
         dpg.set_item_width(
-            "query",
+            "serviceURL",
+            mainWindowWidth - (styleHorizontalPadding * 2 + styleScrollbarWidth)
+        )
+        dpg.set_item_width(
+            "queryText",
             mainWindowWidth - (styleHorizontalPadding * 2 + styleScrollbarWidth)
         )
         # print(f"width: {dpg.get_item_width('query')}")
