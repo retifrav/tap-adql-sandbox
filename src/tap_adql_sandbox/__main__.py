@@ -30,9 +30,11 @@ def showLoading(isLoading):
 
 
 def executeQuery():
-    dpg.configure_item("queryResults", show=False)
+    dpg.configure_item("resultsGroup", show=False)
+    dpg.delete_item("resultsTable")
     dpg.configure_item("errorMessage", show=False)
     dpg.set_value("errorMessage", "")
+
     showLoading(True)
 
     serviceURL = dpg.get_value("serviceURL").strip()
@@ -72,8 +74,32 @@ def executeQuery():
                 tablefmt="psql"
             )
         )
-    dpg.configure_item("queryResults", show=True)
+
     showLoading(False)
+
+    with dpg.table(
+        parent="resultsGroup",
+        tag="resultsTable",
+        header_row=True,
+        resizable=True,
+        borders_outerH=True,
+        borders_innerV=True,
+        borders_innerH=True,
+        borders_outerV=True,
+        policy=dpg.mvTable_SizingStretchProp
+    ):
+        resultsPandas = results.to_table().to_pandas()
+        dpg.add_table_column()
+        for header in resultsPandas:
+            dpg.add_table_column(label=header)
+        for index, row in resultsPandas.iterrows():
+            with dpg.table_row():
+                with dpg.table_cell():
+                    dpg.add_text(default_value=f"{index+1}")
+                for cell in row:
+                    with dpg.table_cell():
+                        dpg.add_text(default_value=cell)
+    dpg.configure_item("resultsGroup", show=True)
 
 
 def preFillExample(sender, app_data, user_data):
@@ -169,7 +195,11 @@ def main():
         #
         # -- contents
         #
-        dpg.add_input_text(tag="serviceURL", hint="TAP service")
+        dpg.add_input_text(
+            tag="serviceURL",
+            hint="TAP service",
+            width=-1
+        )
         dpg.add_input_text(
             tag="queryText",
             hint="ADQL query",  # FIXME doesn't work
@@ -178,7 +208,7 @@ def main():
                 "FROM some_table\n",
                 "WHERE some_thing = 1"
             )),
-            # width=700,
+            width=-1,
             height=350,
             multiline=True,
             tab_input=True
@@ -199,15 +229,16 @@ def main():
         dpg.add_spacer()
 
         dpg.add_text(
-            tag="queryResults",
-            default_value="Query results",
-            show=False
-        )
-        dpg.add_text(
             tag="errorMessage",
             default_value="Error",
             show=False
         )
+
+        with dpg.group(tag="resultsGroup", show=False):
+            dpg.add_text(default_value="Query results:")
+            with dpg.table(tag="resultsTable"):
+                dpg.add_table_column(label="Results")
+
     #
     # --- about window
     #
@@ -268,23 +299,7 @@ def main():
     dpg.show_viewport()
     dpg.set_primary_window(mainWindowID, True)
 
-    # dpg.start_dearpygui()
-    while dpg.is_dearpygui_running():
-        mainWindowWidth = dpg.get_viewport_client_width()
-        # print(f"widths before: {mainWindowWidth} | {styleHorizontalPadding} | {styleScrollbarWidth}")
-        # FIXME https://github.com/hoffstadt/DearPyGui/discussions/1517
-        dpg.set_item_width(
-            "serviceURL",
-            mainWindowWidth - (styleHorizontalPadding * 2 + styleScrollbarWidth)
-        )
-        dpg.set_item_width(
-            "queryText",
-            mainWindowWidth - (styleHorizontalPadding * 2 + styleScrollbarWidth)
-        )
-        # print(f"width: {dpg.get_item_width('query')}")
-        dpg.render_dearpygui_frame()
-        # to exit
-        # dpg.stop_dearpygui()
+    dpg.start_dearpygui()
 
     dpg.destroy_context()
 
