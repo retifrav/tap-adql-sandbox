@@ -158,6 +158,17 @@ def main():
             with dpg.menu(label="File"):
                 dpg.add_menu_item(label="Exit", callback=lambda: dpg.stop_dearpygui())
 
+            # with dpg.menu(label="Settings"):
+            #     dpg.add_menu_item(
+            #         label="Setting 1",
+            #         callback=lambda: print("ololo"),
+            #         check=True
+            #     )
+            #     dpg.add_menu_item(
+            #         label="Setting 2",
+            #         callback=lambda: print("ololo")
+            #     )
+
             if debugMode:
                 with dpg.menu(label="Dev"):
                     dpg.add_menu_item(
