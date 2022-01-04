@@ -163,7 +163,7 @@ def getErrorTheme():
     return errorTheme
 
 
-def getAboutTheme():
+def getWindowTheme():
     with dpg.theme() as aboutTheme:
         with dpg.theme_component(dpg.mvAll):
             dpg.add_theme_style(

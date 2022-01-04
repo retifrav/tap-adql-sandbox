@@ -4,6 +4,7 @@ import argparse
 import pyvo
 import pandas
 from tabulate import tabulate
+import sys
 
 from .version import __version__
 from . import applicationPath, settingsFile, mainWindowID
@@ -11,13 +12,15 @@ from .theme import (
     getGlobalFont,
     getGlobalTheme,
     getErrorTheme,
-    getAboutTheme,
+    getWindowTheme,
     styleHorizontalPadding,
     styleScrollbarWidth
 )
 from .examples import examplesList
 
 debugMode = False
+
+lastQueryResults = {}
 
 
 def showLoading(isLoading):
@@ -30,11 +33,16 @@ def showLoading(isLoading):
 
 
 def executeQuery():
+    global lastQueryResults
+    lastQueryResults = {}
+
     dpg.configure_item("resultsGroup", show=False)
-    dpg.delete_item("resultsTable")
+    if dpg.does_item_exist("resultsTable"):
+        dpg.delete_item("resultsTable")
     dpg.configure_item("errorMessage", show=False)
     dpg.set_value("errorMessage", "")
 
+    dpg.configure_item("menuSaveFile", enabled=False)
     showLoading(True)
 
     serviceURL = dpg.get_value("serviceURL").strip()
@@ -77,6 +85,7 @@ def executeQuery():
 
     showLoading(False)
 
+    lastQueryResults = results.to_table().to_pandas()
     with dpg.table(
         parent="resultsGroup",
         tag="resultsTable",
@@ -88,11 +97,10 @@ def executeQuery():
         borders_outerV=True,
         policy=dpg.mvTable_SizingStretchProp
     ):
-        resultsPandas = results.to_table().to_pandas()
         dpg.add_table_column()
-        for header in resultsPandas:
+        for header in lastQueryResults:
             dpg.add_table_column(label=header)
-        for index, row in resultsPandas.iterrows():
+        for index, row in lastQueryResults.iterrows():
             with dpg.table_row():
                 with dpg.table_cell():
                     dpg.add_text(default_value=f"{index+1}")
@@ -100,11 +108,35 @@ def executeQuery():
                     with dpg.table_cell():
                         dpg.add_text(default_value=cell)
     dpg.configure_item("resultsGroup", show=True)
+    dpg.configure_item("menuSaveFile", enabled=True)
 
 
 def preFillExample(sender, app_data, user_data):
     dpg.set_value("serviceURL", examplesList[user_data]["serviceURL"])
     dpg.set_value("queryText", examplesList[user_data]["queryText"])
+
+
+def saveResultsToPickle(sender, app_data, user_data):
+    if debugMode:
+        print(f"[DEBUG] {app_data}")
+    # this check might be redundant,
+    # as dialog window apparently performs it on its own
+    pickleFileDir = pathlib.Path(app_data["current_path"])
+    if not pickleFileDir.is_dir():
+        print(
+            f"[ERROR] The {pickleFileDir} directory does not exist",
+            file=sys.stderr
+        )
+        return
+    pickleFile = pickleFileDir / app_data["file_name"]
+    try:
+        lastQueryResults.to_pickle(pickleFile)
+    except Exception as ex:
+        print(
+            f"[ERROR] Couldn't save results to {pickleFile}: {ex}",
+            file=sys.stderr
+        )
+        return
 
 
 def main():
@@ -156,7 +188,19 @@ def main():
         #
         with dpg.menu_bar():
             with dpg.menu(label="File"):
-                dpg.add_menu_item(label="Exit", callback=lambda: dpg.stop_dearpygui())
+                dpg.add_menu_item(
+                    tag="menuSaveFile",
+                    label="Save results to pickle",
+                    enabled=False,
+                    callback=lambda: dpg.show_item("dialogSaveFile")
+                )
+                dpg.add_spacer()
+                dpg.add_separator()
+                dpg.add_spacer()
+                dpg.add_menu_item(
+                    label="Exit",
+                    callback=lambda: dpg.stop_dearpygui()
+                )
 
             # with dpg.menu(label="Settings"):
             #     dpg.add_menu_item(
@@ -201,7 +245,10 @@ def main():
                 dpg.add_spacer()
                 dpg.add_menu_item(
                     label="About...",
-                    callback=lambda: dpg.configure_item("about", show=True)
+                    callback=lambda: dpg.configure_item(
+                        "aboutWindow",
+                        show=True
+                    )
                 )
         #
         # -- contents
@@ -251,10 +298,41 @@ def main():
                 dpg.add_table_column(label="Results")
 
     #
+    # --- save file dialog
+    #
+    with dpg.file_dialog(
+        id="dialogSaveFile",
+        directory_selector=False,
+        width=1200,
+        modal=True,
+        show=False,
+        callback=saveResultsToPickle
+    ):
+        dpg.add_file_extension(".pkl", color=(30, 225, 0))
+    #
+    # --- error dialog
+    #
+    # with dpg.window(
+    #     tag="errorDialog",
+    #     label="Error",
+    #     modal=True,
+    #     show=False,
+    #     width=300
+    # ):
+    #     dpg.add_text(
+    #         tag="errorDialogText",
+    #         default_value="Unknown error"
+    #     )
+    #     dpg.add_button(
+    #         label="Close",
+    #         callback=lambda: dpg.configure_item("errorDialog", show=False)
+    #     )
+    #     dpg.add_spacer(height=2)
+    #
     # --- about window
     #
     with dpg.window(
-        tag="about",
+        tag="aboutWindow",
         label="About application",
         modal=True,
         show=False,
@@ -286,14 +364,17 @@ def main():
         dpg.add_spacer(height=10)
         dpg.add_button(
             label="Close",
-            callback=lambda: dpg.configure_item("about", show=False)
+            callback=lambda: dpg.configure_item("aboutWindow", show=False)
         )
         dpg.add_spacer(height=2)
 
+    # themes/styles bindings
     dpg.bind_font(getGlobalFont())
     dpg.bind_theme(getGlobalTheme())
     dpg.bind_item_theme("errorMessage", getErrorTheme())
-    dpg.bind_item_theme("about", getAboutTheme())
+    dpg.bind_item_theme("aboutWindow", getWindowTheme())
+    # dpg.bind_item_theme("errorDialog", getWindowTheme())
+    # dpg.bind_item_theme("errorDialogText", getErrorTheme())
 
     # FIXME https://github.com/hoffstadt/DearPyGui/issues/639
     dpg.create_viewport(
