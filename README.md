@@ -4,12 +4,24 @@ A sandbox application for executing ADQL queries via TAP interface of various da
 
 ![TAP ADQL sandbox](./misc/screenshot-main-macos.png "TAP ADQL sandbox")
 
+## Platforms
+
+Tested on:
+
+- Mac OS:
+    + 11.6.2, Intel
+- Windows:
+    + 10
+    + 11
+- GNU/Linux:
+    + Ubuntu 20.04
+
 ## 3rd-party
 
 ### Requirements
 
-- Python 3.8 or later
-- [DearPyGui](https://pypi.org/project/dearpygui/): version `v1.1.3`, because they broke something with themes/styling in `v1.2`
+- Python 3.6 or later (*though the oldest tested version is 3.7*)
+- [DearPyGui](https://pypi.org/project/dearpygui/)
 - [PyVO](https://pypi.org/project/pyvo/)
 - [pandas](https://pypi.org/project/pandas/)
 
