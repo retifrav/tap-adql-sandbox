@@ -376,13 +376,12 @@ def main():
     # dpg.bind_item_theme("errorDialog", getWindowTheme())
     # dpg.bind_item_theme("errorDialogText", getErrorTheme())
 
-    # FIXME https://github.com/hoffstadt/DearPyGui/issues/639
     dpg.create_viewport(
         title="TAP ADQL sandbox",
-        width=1280,
+        width=1200,
         height=800,
-        min_width=700,
-        min_height=400,
+        min_width=900,
+        min_height=600,
         small_icon=str(applicationPath/"icons/planet-128.ico"),
         large_icon=str(applicationPath/"icons/planet-256.ico")
     )
