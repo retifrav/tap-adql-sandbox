@@ -7,7 +7,7 @@ from tabulate import tabulate
 import sys
 
 from .version import __version__
-from . import applicationPath, settingsFile, mainWindowID
+from . import applicationPath, settingsFile
 from .theme import (
     getGlobalFont,
     getGlobalTheme,
@@ -19,6 +19,8 @@ from .theme import (
 from .examples import examplesList
 
 debugMode = False
+
+mainWindowID = "main-window"
 
 lastQueryResults = {}
 
@@ -177,12 +179,7 @@ def main():
     #
     # --- main window
     #
-    with dpg.window(
-        tag=mainWindowID
-        # width=900,
-        # height=500,
-        # no_scrollbar=True  # FIXME doesn't seem to work
-    ):
+    with dpg.window(tag=mainWindowID):
         #
         # --- menu
         #
@@ -260,7 +257,9 @@ def main():
         )
         dpg.add_input_text(
             tag="queryText",
-            hint="ADQL query",  # FIXME doesn't work
+            # FIXME doesn't work (yet)
+            # https://github.com/hoffstadt/DearPyGui/issues/1519
+            hint="ADQL query",
             default_value="".join((
                 "SELECT TOP 11 *\n",
                 "FROM some_table\n",
@@ -303,7 +302,8 @@ def main():
     with dpg.file_dialog(
         id="dialogSaveFile",
         directory_selector=False,
-        width=1200,
+        width=800,
+        height=600,
         modal=True,
         show=False,
         callback=saveResultsToPickle
