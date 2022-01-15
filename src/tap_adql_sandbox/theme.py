@@ -12,10 +12,12 @@ styleScrollbarWidth = 16
 
 def getGlobalFont():
     with dpg.font_registry():
-        globalFont = dpg.add_font(
-            applicationPath / "fonts" / "JetBrainsMono-Thin.ttf", 24
-        )
-        return globalFont
+        with dpg.font(
+            applicationPath / "fonts" / "JetBrainsMono-Thin.ttf",
+            24
+        ) as globalFont:
+            dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
+            return globalFont
 
 
 def getGlobalTheme():
@@ -149,7 +151,7 @@ def getGlobalTheme():
                 category=dpg.mvThemeCat_Core
             )
 
-    return globalTheme
+        return globalTheme
 
 
 def getErrorTheme():
@@ -160,7 +162,7 @@ def getErrorTheme():
                 (255, 0, 0),
                 category=dpg.mvThemeCat_Core
             )
-    return errorTheme
+        return errorTheme
 
 
 def getWindowTheme():
@@ -171,4 +173,4 @@ def getWindowTheme():
                 styleHorizontalPadding, 4,
                 category=dpg.mvThemeCat_Core
             )
-    return aboutTheme
+        return aboutTheme
