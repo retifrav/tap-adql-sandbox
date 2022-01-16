@@ -6,8 +6,8 @@ import pandas
 from tabulate import tabulate
 import sys
 
-from .version import __version__
 from . import applicationPath, settingsFile
+from .version import __version__
 from .theme import (
     getGlobalFont,
     getGlobalTheme,
@@ -21,44 +21,72 @@ from .examples import examplesList
 debugMode = False
 
 mainWindowID = "main-window"
+queryTextID = "query-text"
 
 lastQueryResults = {}
+executingQuery = False
 
 
 def showLoading(isLoading):
+    global executingQuery
+
     if isLoading:
-        dpg.configure_item("btnExecuteQuery", show=False)
-        dpg.configure_item("loadingAnimation", show=True)
+        dpg.hide_item("btnExecuteQuery")
+        dpg.configure_item("menuExecuteQuery", enabled=False)
+        dpg.show_item("loadingAnimation")
+        executingQuery = True
     else:
-        dpg.configure_item("loadingAnimation", show=False)
-        dpg.configure_item("btnExecuteQuery", show=True)
+        dpg.hide_item("loadingAnimation")
+        dpg.show_item("btnExecuteQuery")
+        dpg.configure_item("menuExecuteQuery", enabled=True)
+        executingQuery = False
+
+
+def keyPressCallback(sender, app_data):
+    global executingQuery
+
+    # print(sender, app_data)
+    # dpg.is_item_focused
+    if not dpg.is_item_active(queryTextID) or executingQuery:
+        return
+
+    if dpg.is_key_down(dpg.mvKey_R):
+        # executingQuery = True
+        if debugMode:
+            print(
+                "".join((
+                    "[DEBUG] Triggered executing query ",
+                    "from the keyboard shortcut"
+                ))
+            )
+        executeQuery()
 
 
 def executeQuery():
     global lastQueryResults
     lastQueryResults = {}
 
-    dpg.configure_item("resultsGroup", show=False)
+    dpg.hide_item("resultsGroup")
     if dpg.does_item_exist("resultsTable"):
         dpg.delete_item("resultsTable")
-    dpg.configure_item("errorMessage", show=False)
+    dpg.hide_item("errorMessage")
     dpg.set_value("errorMessage", "")
 
     dpg.configure_item("menuSaveFile", enabled=False)
     showLoading(True)
 
     serviceURL = dpg.get_value("serviceURL").strip()
-    queryText = dpg.get_value("queryText").strip()
+    queryText = dpg.get_value(queryTextID).strip()
 
     if not serviceURL:
         dpg.set_value("errorMessage", "No service URL provided")
-        dpg.configure_item("errorMessage", show=True)
+        dpg.show_item("errorMessage")
         showLoading(False)
         return
 
     if not queryText:
         dpg.set_value("errorMessage", "Cannot execute an empty query")
-        dpg.configure_item("errorMessage", show=True)
+        dpg.show_item("errorMessage")
         showLoading(False)
         return
 
@@ -71,7 +99,7 @@ def executeQuery():
         results = service.search(queryText)
     except Exception as ex:
         dpg.set_value("errorMessage", ex)
-        dpg.configure_item("errorMessage", show=True)
+        dpg.show_item("errorMessage")
         showLoading(False)
         return
 
@@ -109,13 +137,13 @@ def executeQuery():
                 for cell in row:
                     with dpg.table_cell():
                         dpg.add_text(default_value=cell)
-    dpg.configure_item("resultsGroup", show=True)
+    dpg.show_item("resultsGroup")
     dpg.configure_item("menuSaveFile", enabled=True)
 
 
 def preFillExample(sender, app_data, user_data):
     dpg.set_value("serviceURL", examplesList[user_data]["serviceURL"])
-    dpg.set_value("queryText", examplesList[user_data]["queryText"])
+    dpg.set_value(queryTextID, examplesList[user_data]["queryText"])
 
 
 def saveResultsToPickle(sender, app_data, user_data):
@@ -186,8 +214,17 @@ def main():
         with dpg.menu_bar():
             with dpg.menu(label="File"):
                 dpg.add_menu_item(
+                    tag="menuExecuteQuery",
+                    label="Execute query",
+                    shortcut="Cmd/Ctrl + R",
+                    callback=executeQuery
+                )
+                dpg.add_spacer()
+                dpg.add_separator()
+                dpg.add_spacer()
+                dpg.add_menu_item(
                     tag="menuSaveFile",
-                    label="Save results to pickle",
+                    label="Save results to pickle...",
                     enabled=False,
                     callback=lambda: dpg.show_item("dialogSaveFile")
                 )
@@ -242,10 +279,7 @@ def main():
                 dpg.add_spacer()
                 dpg.add_menu_item(
                     label="About...",
-                    callback=lambda: dpg.configure_item(
-                        "aboutWindow",
-                        show=True
-                    )
+                    callback=lambda: dpg.show_item("aboutWindow")
                 )
         #
         # -- contents
@@ -256,7 +290,7 @@ def main():
             width=-1
         )
         dpg.add_input_text(
-            tag="queryText",
+            tag=queryTextID,
             # FIXME doesn't work (yet)
             # https://github.com/hoffstadt/DearPyGui/issues/1519
             hint="ADQL query",
@@ -295,7 +329,6 @@ def main():
             dpg.add_text(default_value="Query results:")
             with dpg.table(tag="resultsTable"):
                 dpg.add_table_column(label="Results")
-
     #
     # --- save file dialog
     #
@@ -325,7 +358,7 @@ def main():
     #     )
     #     dpg.add_button(
     #         label="Close",
-    #         callback=lambda: dpg.configure_item("errorDialog", show=False)
+    #         callback=lambda: dpg.hide_item("errorDialog")
     #     )
     #     dpg.add_spacer(height=2)
     #
@@ -335,9 +368,7 @@ def main():
         tag="aboutWindow",
         label="About application",
         modal=True,
-        show=False,
-        no_title_bar=False
-        # no_scrollbar=True
+        show=False
     ):
         dpg.add_text(
             "".join((
@@ -364,7 +395,7 @@ def main():
         dpg.add_spacer(height=10)
         dpg.add_button(
             label="Close",
-            callback=lambda: dpg.configure_item("aboutWindow", show=False)
+            callback=lambda: dpg.hide_item("aboutWindow")
         )
         dpg.add_spacer(height=2)
 
@@ -375,6 +406,18 @@ def main():
     dpg.bind_item_theme("aboutWindow", getWindowTheme())
     # dpg.bind_item_theme("errorDialog", getWindowTheme())
     # dpg.bind_item_theme("errorDialogText", getErrorTheme())
+
+    # keyboard shortcuts
+    with dpg.handler_registry():
+        # --- for the query text
+        # Control
+        dpg.add_key_press_handler(341, callback=keyPressCallback)
+        # left Command
+        dpg.add_key_press_handler(343, callback=keyPressCallback)
+        # right Command
+        dpg.add_key_press_handler(347, callback=keyPressCallback)
+
+    # ---
 
     dpg.create_viewport(
         title="TAP ADQL sandbox",
