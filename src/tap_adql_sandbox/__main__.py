@@ -284,16 +284,26 @@ def main():
 
             with dpg.menu(label="Help"):
                 with dpg.menu(label="Examples"):
-                    dpg.add_menu_item(
-                        label="exoplanet.eu",
-                        user_data="exoplanet.eu",
-                        callback=preFillExample
-                    )
-                    dpg.add_menu_item(
-                        label="NASA",
-                        user_data="NASA",
-                        callback=preFillExample
-                    )
+                    with dpg.menu(label="PADC"):
+                        for exmpl in {
+                            k: v for k, v in examplesList.items()
+                            if k.startswith("padc-")
+                        }:
+                            dpg.add_menu_item(
+                                label=examplesList[exmpl]["description"],
+                                user_data=exmpl,
+                                callback=preFillExample
+                            )
+                    with dpg.menu(label="NASA"):
+                        for exmpl in {
+                            k: v for k, v in examplesList.items()
+                            if k.startswith("nasa-")
+                        }:
+                            dpg.add_menu_item(
+                                label=examplesList[exmpl]["description"],
+                                user_data=exmpl,
+                                callback=preFillExample
+                            )
                 dpg.add_spacer()
                 dpg.add_separator()
                 dpg.add_spacer()
