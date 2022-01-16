@@ -169,6 +169,12 @@ def saveResultsToPickle(sender, app_data, user_data):
         return
 
 
+def showDPGabout():
+    # https://github.com/retifrav/tap-adql-sandbox/issues/6
+    # dpg.hide_item("aboutWindow")
+    dpg.show_about()
+
+
 def main():
     global debugMode
     argParser = argparse.ArgumentParser(
@@ -367,7 +373,8 @@ def main():
     with dpg.window(
         tag="aboutWindow",
         label="About application",
-        modal=True,
+        # https://github.com/retifrav/tap-adql-sandbox/issues/6
+        # modal=True,
         show=False
     ):
         dpg.add_text(
@@ -388,7 +395,7 @@ def main():
             dpg.add_text("Created with DearPyGui")
             dpg.add_button(
                 label="about that...",
-                callback=lambda: dpg.show_about()
+                callback=showDPGabout
             )
         dpg.add_spacer(height=5)
         dpg.add_separator()
