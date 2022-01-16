@@ -23,6 +23,8 @@ debugMode = False
 mainWindowID = "main-window"
 queryTextID = "query-text"
 
+tabulateFloatfmtPrecision = "g"
+
 lastQueryResults = {}
 executingQuery = False
 
@@ -105,13 +107,17 @@ def executeQuery():
 
     if debugMode:
         print("\n[DEBUG] Results found:", len(results))
-        print(
-            tabulate(
-                results.to_table(),
-                headers=results.fieldnames,
-                tablefmt="psql"
+        try:
+            print(
+                tabulate(
+                    results.to_table(),
+                    headers=results.fieldnames,
+                    tablefmt="psql",
+                    floatfmt=tabulateFloatfmtPrecision
+                )
             )
-        )
+        except Exception as ex:
+            print(f"[WARNING] Couldn't print results. {ex}")
 
     showLoading(False)
 
@@ -177,6 +183,8 @@ def showDPGabout():
 
 def main():
     global debugMode
+    global tabulateFloatfmtPrecision
+
     argParser = argparse.ArgumentParser(
         prog="tap-adql-sandbox",
         description=" ".join((
@@ -197,10 +205,16 @@ def main():
         action='store_true',
         help=f"enable debug/dev mode (default: %(default)s)"
     )
+    argParser.add_argument(
+        "--tbl-flt-prcs",
+        metavar=".8f",
+        help="floating point precision for tabulate output"
+    )
     cliArgs = argParser.parse_args()
     # print(cliArgs)
 
     debugMode = cliArgs.debug
+    tabulateFloatfmtPrecision = cliArgs.tbl_flt_prcs
 
     dpg.create_context()
 
