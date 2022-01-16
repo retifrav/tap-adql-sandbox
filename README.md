@@ -6,6 +6,7 @@
 - [Installing](#installing)
     - [From PyPI](#from-pypi)
     - [From sources](#from-sources)
+- [Running](#running)
 - [Platforms](#platforms)
 - [3rd-party](#3rd-party)
     - [Requirements](#requirements)
@@ -34,6 +35,12 @@ $ cd /path/to/repository/
 $ pip install ./
 ```
 
+## Running
+
+``` sh
+$ tap-adql-sandbox --help
+```
+
 ## Platforms
 
 Tested on:
@@ -54,6 +61,7 @@ Tested on:
 - [DearPyGui](https://pypi.org/project/dearpygui/)
 - [PyVO](https://pypi.org/project/pyvo/)
 - [pandas](https://pypi.org/project/pandas/)
+- [tabulate](https://pypi.org/project/tabulate/)
 
 ### Resources
 
