@@ -165,6 +165,28 @@ def getErrorTheme():
         return errorTheme
 
 
+def getCellHighlightedTheme():
+    with dpg.theme() as cellHighlightedTheme:
+        with dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_color(
+                dpg.mvThemeCol_Text,
+                (255, 255, 0),
+                category=dpg.mvThemeCat_Core
+            )
+        return cellHighlightedTheme
+
+
+def getCellDefaultTheme():
+    with dpg.theme() as cellDefaultTheme:
+        with dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_color(
+                dpg.mvThemeCol_Text,
+                (255, 255, 255),
+                category=dpg.mvThemeCat_Core
+            )
+        return cellDefaultTheme
+
+
 def getWindowTheme():
     with dpg.theme() as aboutTheme:
         with dpg.theme_component(dpg.mvAll):

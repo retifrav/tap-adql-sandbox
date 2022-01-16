@@ -1,9 +1,12 @@
+# dependencies
 import dearpygui.dearpygui as dpg
-import pathlib
-import argparse
-import pyvo
-import pandas
 from tabulate import tabulate
+import pathlib
+import pandas
+import pyvo
+# standard libraries
+from time import sleep
+import argparse
 import sys
 
 from . import applicationPath, settingsFile
@@ -13,6 +16,8 @@ from .theme import (
     getGlobalTheme,
     getErrorTheme,
     getWindowTheme,
+    getCellHighlightedTheme,
+    getCellDefaultTheme,
     styleHorizontalPadding,
     styleScrollbarWidth
 )
@@ -140,9 +145,19 @@ def executeQuery():
             with dpg.table_row():
                 with dpg.table_cell():
                     dpg.add_text(default_value=f"{index+1}")
+                cellIndex = 1
                 for cell in row:
                     with dpg.table_cell():
-                        dpg.add_text(default_value=cell)
+                        cellID = f"cell{index+1}{cellIndex}"
+                        dpg.add_text(
+                            tag=cellID,
+                            default_value=cell
+                        )
+                        dpg.bind_item_handler_registry(
+                            cellID,
+                            "cell-handler"
+                        )
+                    cellIndex += 1
     dpg.show_item("resultsGroup")
     dpg.configure_item("menuSaveFile", enabled=True)
 
@@ -173,6 +188,21 @@ def saveResultsToPickle(sender, app_data, user_data):
             file=sys.stderr
         )
         return
+
+
+def cellClicked(sender, app_data):
+    # print(sender, app_data)
+
+    # mouse right click
+    if app_data[0] == 1:
+        cellValue = dpg.get_value(app_data[1])
+        # print(cellValue)
+        dpg.set_clipboard_text(cellValue)
+        dpg.set_value(app_data[1], "(copied)")
+        dpg.bind_item_theme(app_data[1], getCellHighlightedTheme())
+        sleep(1)
+        dpg.bind_item_theme(app_data[1], getCellDefaultTheme())
+        dpg.set_value(app_data[1], cellValue)
 
 
 def showDPGabout():
@@ -439,6 +469,10 @@ def main():
     # dpg.bind_item_theme("errorDialog", getWindowTheme())
     # dpg.bind_item_theme("errorDialogText", getErrorTheme())
 
+    # mouse clicks handler for results table cells
+    with dpg.item_handler_registry(tag="cell-handler") as handler:
+        dpg.add_item_clicked_handler(callback=cellClicked)
+
     # keyboard shortcuts
     with dpg.handler_registry():
         # --- for the query text
@@ -464,6 +498,10 @@ def main():
     dpg.setup_dearpygui()
     dpg.show_viewport()
     dpg.set_primary_window(mainWindowID, True)
+
+    # things to do on application start
+    dpg.set_value("serviceURL", examplesList["padc-system-planets"]["serviceURL"])
+    dpg.set_value(queryTextID, examplesList["padc-system-planets"]["queryText"])
 
     dpg.start_dearpygui()
 
