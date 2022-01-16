@@ -214,7 +214,8 @@ def main():
     # print(cliArgs)
 
     debugMode = cliArgs.debug
-    tabulateFloatfmtPrecision = cliArgs.tbl_flt_prcs
+    if cliArgs.tbl_flt_prcs:
+        tabulateFloatfmtPrecision = cliArgs.tbl_flt_prcs
 
     dpg.create_context()
 

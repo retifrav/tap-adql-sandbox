@@ -2,6 +2,7 @@
 
 <!-- MarkdownTOC -->
 
+- [0.5.1](#051)
 - [0.5.0](#050)
 - [0.4.0](#040)
 - [0.3.0](#030)
@@ -9,6 +10,12 @@
 - [0.1.0](#010)
 
 <!-- /MarkdownTOC -->
+
+## 0.5.1
+
+Released on `2022-01-16`.
+
+- fixed overwriting default floatfmt value even if `--tbl-flt-prcs` was not provided
 
 ## 0.5.0
 
