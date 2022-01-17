@@ -476,12 +476,16 @@ def main():
     # keyboard shortcuts
     with dpg.handler_registry():
         # --- for the query text
-        # Control
+        # Mac OS | Control
         dpg.add_key_press_handler(341, callback=keyPressCallback)
-        # left Command
+        # Mac OS | left Command
         dpg.add_key_press_handler(343, callback=keyPressCallback)
-        # right Command
+        # Mac OS | right Command
         dpg.add_key_press_handler(347, callback=keyPressCallback)
+        # Linux | right Ctrl?
+        dpg.add_key_press_handler(345, callback=keyPressCallback)
+        # Windows | left and right Ctrl
+        dpg.add_key_press_handler(17, callback=keyPressCallback)
 
     # ---
 
