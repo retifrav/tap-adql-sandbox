@@ -300,6 +300,10 @@ def main():
             if debugMode:
                 with dpg.menu(label="Dev"):
                     dpg.add_menu_item(
+                        label="Performance metrics",
+                        callback=lambda: dpg.show_metrics()
+                    )
+                    dpg.add_menu_item(
                         label="Items registry",
                         callback=lambda: dpg.show_item_registry()
                     )
