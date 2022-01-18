@@ -124,8 +124,6 @@ def executeQuery():
         except Exception as ex:
             print(f"[WARNING] Couldn't print results. {ex}")
 
-    showLoading(False)
-
     lastQueryResults = results.to_table().to_pandas()
     with dpg.table(
         parent="resultsGroup",
@@ -158,6 +156,7 @@ def executeQuery():
                             "cell-handler"
                         )
                     cellIndex += 1
+    showLoading(False)
     dpg.show_item("resultsGroup")
     dpg.configure_item("menuSaveFile", enabled=True)
 
