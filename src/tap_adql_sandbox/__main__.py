@@ -134,7 +134,8 @@ def executeQuery():
         borders_innerV=True,
         borders_innerH=True,
         borders_outerV=True,
-        policy=dpg.mvTable_SizingStretchProp
+        policy=dpg.mvTable_SizingStretchProp,
+        clipper=True
     ):
         dpg.add_table_column()
         for header in lastQueryResults:
