@@ -2,6 +2,7 @@
 
 <!-- MarkdownTOC -->
 
+- [0.6.0](#060)
 - [0.5.1](#051)
 - [0.5.0](#050)
 - [0.4.0](#040)
@@ -10,6 +11,16 @@
 - [0.1.0](#010)
 
 <!-- /MarkdownTOC -->
+
+## 0.6.0
+
+Released on `2022-01-20`.
+
+- copying results table cell value on right-click
+- actually useful pre-filled service URL and query text on launch
+- added missing shortcut keyboard codes for Windows and GNU/Linux
+- loading indicator get hidden only when the results table is ready
+- clipping the results table to improve application performance
 
 ## 0.5.1
 

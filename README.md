@@ -8,6 +8,7 @@
     - [From sources](#from-sources)
 - [Running](#running)
 - [Platforms](#platforms)
+- [Known problems](#known-problems)
 - [3rd-party](#3rd-party)
     - [Requirements](#requirements)
     - [Resources](#resources)
@@ -52,6 +53,10 @@ Tested on:
     + 11
 - GNU/Linux:
     + Ubuntu 20.04
+
+## Known problems
+
+- if `SELECT` requests a lot of columns, the results table [might not have](https://github.com/retifrav/tap-adql-sandbox/issues/8) visible contents, or the application [might just crash](https://github.com/retifrav/tap-adql-sandbox/issues/14)
 
 ## 3rd-party
 

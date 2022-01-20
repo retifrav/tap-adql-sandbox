@@ -125,6 +125,7 @@ def executeQuery():
             print(f"[WARNING] Couldn't print results. {ex}")
 
     lastQueryResults = results.to_table().to_pandas()
+    # try:
     with dpg.table(
         parent="resultsGroup",
         tag="resultsTable",
@@ -157,6 +158,13 @@ def executeQuery():
                             "cell-handler"
                         )
                     cellIndex += 1
+    # except Exception as ex:
+    #     errorMsg = "Couldn't generate the results table"
+    #     print(f"[ERROR] {errorMsg}. {ex}", file=sys.stderr)
+    #     dpg.set_value("errorMessage", errorMsg)
+    #     dpg.show_item("errorMessage")
+    #     showLoading(False)
+    #     return
     showLoading(False)
     dpg.show_item("resultsGroup")
     dpg.configure_item("menuSaveFile", enabled=True)
