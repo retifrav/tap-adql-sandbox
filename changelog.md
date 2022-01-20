@@ -19,8 +19,8 @@ Released on `2022-01-20`.
 - copying results table cell value on right-click
 - actually useful pre-filled service URL and query text on launch
 - added missing shortcut keyboard codes for Windows and GNU/Linux
-- loading indicator get hidden only when the results table is ready
-- clipping the results table to improve application performance
+- loading indicator gets hidden only when the results table is ready
+- clipping results table to improve application performance
 
 ## 0.5.1
 
