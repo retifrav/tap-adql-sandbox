@@ -30,6 +30,14 @@ queryTextID = "query-text"
 
 tabulateFloatfmtPrecision = "g"
 
+# Dear PyGui (and Dear ImGui) has a limitation of 64 columns in a table
+# https://dearpygui.readthedocs.io/en/latest/documentation/tables.html
+# https://github.com/ocornut/imgui/issues/2957#issuecomment-758136035
+# https://github.com/ocornut/imgui/pull/4876
+dpgColumnsMax = 64
+
+windowMinWidth = 900
+
 lastQueryResults = {}
 executingQuery = False
 
@@ -125,6 +133,23 @@ def executeQuery():
             print(f"[WARNING] Couldn't print results. {ex}")
 
     lastQueryResults = results.to_table().to_pandas()
+    rowsCount, columnsCount = lastQueryResults.shape
+    if debugMode:
+        print(f"[DEBUG] Columns: {columnsCount}, rows: {rowsCount}")
+    if columnsCount > dpgColumnsMax:
+        dpg.set_value(
+            "errorMessage",
+            " ".join((
+                "You have requested too many columns in your query.",
+                f"Dear PyGui only supports maximum {dpgColumnsMax} columns",
+                "in a table, and so trying to display results for your query",
+                "will crash the application. Remove some columns from your",
+                "SELECT statement and try again."
+            ))
+        )
+        dpg.show_item("errorMessage")
+        showLoading(False)
+        return
     # try:
     with dpg.table(
         parent="resultsGroup",
@@ -395,6 +420,8 @@ def main():
         dpg.add_text(
             tag="errorMessage",
             default_value="Error",
+            # https://github.com/hoffstadt/DearPyGui/issues/1275
+            wrap=windowMinWidth-50,
             show=False
         )
 
@@ -505,7 +532,7 @@ def main():
         title="TAP ADQL sandbox",
         width=1200,
         height=800,
-        min_width=900,
+        min_width=windowMinWidth,
         min_height=600,
         small_icon=str(applicationPath/"icons/planet-128.ico"),
         large_icon=str(applicationPath/"icons/planet-256.ico")
