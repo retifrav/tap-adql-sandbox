@@ -25,6 +25,7 @@ from .theme import (
 from .examples import examplesList
 
 debugMode = False
+addEnumerationColumn = False
 
 mainWindowID = "main-window"
 queryTextID = "query-text"
@@ -170,13 +171,15 @@ def executeQuery():
             policy=dpg.mvTable_SizingFixedSame,
             scrollX=True
         ):
-            dpg.add_table_column()
+            if addEnumerationColumn:
+                dpg.add_table_column()
             for header in lastQueryResults:
                 dpg.add_table_column(label=header)
             for index, row in lastQueryResults.iterrows():
                 with dpg.table_row():
-                    with dpg.table_cell():
-                        dpg.add_text(default_value=f"{index+1}")
+                    if addEnumerationColumn:
+                        with dpg.table_cell():
+                            dpg.add_text(default_value=f"{index+1}")
                     cellIndex = 1
                     for cell in row:
                         with dpg.table_cell():
@@ -258,13 +261,14 @@ def showDPGabout():
 def main():
     global debugMode
     global tabulateFloatfmtPrecision
+    global addEnumerationColumn
 
     argParser = argparse.ArgumentParser(
         prog="tap-adql-sandbox",
         description=" ".join((
             "%(prog)s  Copyright (C) 2022  retif\nA",
             "sandbox application for executing ADQL queries",
-            f"via TAP interface."
+            "via TAP interface."
         )),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         allow_abbrev=False
@@ -277,7 +281,15 @@ def main():
     argParser.add_argument(
         "--debug",
         action='store_true',
-        help=f"enable debug/dev mode (default: %(default)s)"
+        help="enable debug/dev mode (default: %(default)s)"
+    )
+    argParser.add_argument(
+        "--add-enum-column",
+        action='store_true',
+        help=" ".join((
+            "add artificial first column",
+            "to enumerate results (default: %(default)s)"
+        ))
     )
     argParser.add_argument(
         "--tbl-flt-prcs",
@@ -288,6 +300,7 @@ def main():
     # print(cliArgs)
 
     debugMode = cliArgs.debug
+    addEnumerationColumn = cliArgs.add_enum_column
     if cliArgs.tbl_flt_prcs:
         tabulateFloatfmtPrecision = cliArgs.tbl_flt_prcs
 
@@ -491,8 +504,8 @@ def main():
             ))
         )
         dpg.add_text(f"Version: {__version__}")
-        dpg.add_text(f"Source code: https://github.com/retifrav/tap-adql-sandbox")
-        dpg.add_text(f"License: GPLv3")
+        dpg.add_text("Source code: https://github.com/retifrav/tap-adql-sandbox")
+        dpg.add_text("License: GPLv3")
         dpg.add_spacer()
         dpg.add_separator()
         dpg.add_spacer(height=5)
