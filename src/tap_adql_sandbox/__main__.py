@@ -8,6 +8,7 @@ import pyvo
 from time import sleep
 import argparse
 import sys
+import traceback
 
 from . import applicationPath, settingsFile
 from .version import __version__
@@ -150,46 +151,56 @@ def executeQuery():
         dpg.show_item("errorMessage")
         showLoading(False)
         return
-    # try:
-    with dpg.table(
-        parent="resultsGroup",
-        tag="resultsTable",
-        header_row=True,
-        resizable=True,
-        borders_outerH=True,
-        borders_innerV=True,
-        borders_innerH=True,
-        borders_outerV=True,
-        policy=dpg.mvTable_SizingStretchProp,
-        clipper=True
-    ):
-        dpg.add_table_column()
-        for header in lastQueryResults:
-            dpg.add_table_column(label=header)
-        for index, row in lastQueryResults.iterrows():
-            with dpg.table_row():
-                with dpg.table_cell():
-                    dpg.add_text(default_value=f"{index+1}")
-                cellIndex = 1
-                for cell in row:
+    try:
+        with dpg.table(
+            parent="resultsGroup",
+            tag="resultsTable",
+            header_row=True,
+            resizable=True,
+            borders_outerH=True,
+            borders_innerV=True,
+            borders_innerH=True,
+            borders_outerV=True,
+            clipper=True,
+            # row_background=True,
+            # freeze_rows=0,
+            # freeze_columns=1,
+            # scrollY=True,
+            # policy=dpg.mvTable_SizingStretchProp,
+            policy=dpg.mvTable_SizingFixedSame,
+            scrollX=True
+        ):
+            dpg.add_table_column()
+            for header in lastQueryResults:
+                dpg.add_table_column(label=header)
+            for index, row in lastQueryResults.iterrows():
+                with dpg.table_row():
                     with dpg.table_cell():
-                        cellID = f"cell{index+1}{cellIndex}"
-                        dpg.add_text(
-                            tag=cellID,
-                            default_value=cell
-                        )
-                        dpg.bind_item_handler_registry(
-                            cellID,
-                            "cell-handler"
-                        )
-                    cellIndex += 1
-    # except Exception as ex:
-    #     errorMsg = "Couldn't generate the results table"
-    #     print(f"[ERROR] {errorMsg}. {ex}", file=sys.stderr)
-    #     dpg.set_value("errorMessage", errorMsg)
-    #     dpg.show_item("errorMessage")
-    #     showLoading(False)
-    #     return
+                        dpg.add_text(default_value=f"{index+1}")
+                    cellIndex = 1
+                    for cell in row:
+                        with dpg.table_cell():
+                            cellID = f"cell-{index+1}-{cellIndex}"
+                            dpg.add_text(
+                                tag=cellID,
+                                default_value=cell
+                            )
+                            dpg.bind_item_handler_registry(
+                                cellID,
+                                "cell-handler"
+                            )
+                        cellIndex += 1
+    except Exception as ex:
+        errorMsg = "Couldn't generate the results table"
+        print(f"[ERROR] {errorMsg}. {ex}", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        dpg.set_value(
+            "errorMessage",
+            f"{errorMsg}. There might be more details in console/stderr."
+        )
+        dpg.show_item("errorMessage")
+        showLoading(False)
+        return
     showLoading(False)
     dpg.show_item("resultsGroup")
     dpg.configure_item("menuSaveFile", enabled=True)
@@ -231,7 +242,7 @@ def cellClicked(sender, app_data):
         cellValue = dpg.get_value(app_data[1])
         # print(cellValue)
         dpg.set_clipboard_text(cellValue)
-        dpg.set_value(app_data[1], "(copied)")
+        dpg.set_value(app_data[1], "[copied]")
         dpg.bind_item_theme(app_data[1], getCellHighlightedTheme())
         sleep(1)
         dpg.bind_item_theme(app_data[1], getCellDefaultTheme())
