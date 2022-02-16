@@ -68,7 +68,7 @@ Tested on:
 ### Requirements
 
 - Python 3.6 or later (*though the oldest tested version is 3.7*)
-- [DearPyGui](https://pypi.org/project/dearpygui/)
+- [Dear PyGui](https://pypi.org/project/dearpygui/)
 - [PyVO](https://pypi.org/project/pyvo/)
 - [pandas](https://pypi.org/project/pandas/)
 - [tabulate](https://pypi.org/project/tabulate/)

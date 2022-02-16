@@ -510,7 +510,7 @@ def main():
         dpg.add_separator()
         dpg.add_spacer(height=5)
         with dpg.group(horizontal=True):
-            dpg.add_text("Created with DearPyGui")
+            dpg.add_text("Created with Dear PyGui")
             dpg.add_button(
                 label="about that...",
                 callback=showDPGabout
