@@ -24,7 +24,7 @@ A sandbox application for executing ADQL queries via TAP interface of various da
 
 ### Demonstration
 
-https://raw.githubusercontent.com/retifrav/tap-adql-sandbox/master/misc/application-demonstration-macos.mp4
+https://user-images.githubusercontent.com/6904927/154367260-db2dc02c-ee88-4fe2-b500-cae14d51bd08.mp4
 
 ## Installing
 
