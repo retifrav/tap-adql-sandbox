@@ -153,6 +153,11 @@ def executeQuery():
         showLoading(False)
         return
     try:
+        # when there isn't that many columns,
+        # squeezed table doesn't look nice
+        addHorizontalScroll = (
+            dpg.get_item_width(mainWindowID) / columnsCount < 150
+        )
         with dpg.table(
             parent="resultsGroup",
             tag="resultsTable",
@@ -167,9 +172,12 @@ def executeQuery():
             # freeze_rows=0,
             # freeze_columns=1,
             # scrollY=True,
-            # policy=dpg.mvTable_SizingStretchProp,
-            policy=dpg.mvTable_SizingFixedSame,
-            scrollX=True
+            policy=(
+                dpg.mvTable_SizingFixedSame
+                if addHorizontalScroll
+                else dpg.mvTable_SizingStretchProp
+            ),
+            scrollX=addHorizontalScroll
         ):
             if addEnumerationColumn:
                 dpg.add_table_column()
