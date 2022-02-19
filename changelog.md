@@ -2,6 +2,7 @@
 
 <!-- MarkdownTOC -->
 
+- [0.7.0](#070)
 - [0.6.0](#060)
 - [0.5.1](#051)
 - [0.5.0](#050)
@@ -11,6 +12,16 @@
 - [0.1.0](#010)
 
 <!-- /MarkdownTOC -->
+
+## 0.7.0
+
+Released on `2022-02-19`.
+
+- not rendering results table for more than 64 columns (*Dear PyGui limitation*), showing warning instead ([#14](https://github.com/retifrav/tap-adql-sandbox/issues/14))
+- fixed incorrect table cells tagging scheme ([#15](https://github.com/retifrav/tap-adql-sandbox/issues/15))
+- artificial enumerating column in results table can be disabled with `--no-enum-column` ([#17](https://github.com/retifrav/tap-adql-sandbox/issues/17))
+- added horizontal scroll for results table when it has too many columns to fit
+- added more queries examples ([#16](https://github.com/retifrav/tap-adql-sandbox/issues/16))
 
 ## 0.6.0
 
