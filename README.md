@@ -52,7 +52,8 @@ $ tap-adql-sandbox --help
 Tested on:
 
 - Mac OS:
-    + 11.6.2, Intel
+    + 11.6.3, Intel
+    + 12.2.1, Apple silicon
 - Windows:
     + 10
     + 11
