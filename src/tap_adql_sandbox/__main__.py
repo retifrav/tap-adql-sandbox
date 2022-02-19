@@ -25,7 +25,7 @@ from .theme import (
 from .examples import examplesList
 
 debugMode = False
-addEnumerationColumn = False
+noEnumerationColumn = False
 
 mainWindowID = "main-window"
 queryTextID = "query-text"
@@ -179,13 +179,13 @@ def executeQuery():
             ),
             scrollX=addHorizontalScroll
         ):
-            if addEnumerationColumn:
-                dpg.add_table_column()
+            if not noEnumerationColumn and rowsCount > 1:
+                dpg.add_table_column(label="#")
             for header in lastQueryResults:
                 dpg.add_table_column(label=header)
             for index, row in lastQueryResults.iterrows():
                 with dpg.table_row():
-                    if addEnumerationColumn:
+                    if not noEnumerationColumn and rowsCount > 1:
                         with dpg.table_cell():
                             dpg.add_text(default_value=f"{index+1}")
                     cellIndex = 1
@@ -269,7 +269,7 @@ def showDPGabout():
 def main():
     global debugMode
     global tabulateFloatfmtPrecision
-    global addEnumerationColumn
+    global noEnumerationColumn
 
     argParser = argparse.ArgumentParser(
         prog="tap-adql-sandbox",
@@ -292,7 +292,7 @@ def main():
         help="enable debug/dev mode (default: %(default)s)"
     )
     argParser.add_argument(
-        "--add-enum-column",
+        "--no-enum-column",
         action='store_true',
         help=" ".join((
             "add artificial first column",
@@ -308,7 +308,7 @@ def main():
     # print(cliArgs)
 
     debugMode = cliArgs.debug
-    addEnumerationColumn = cliArgs.add_enum_column
+    noEnumerationColumn = cliArgs.no_enum_column
     if cliArgs.tbl_flt_prcs:
         tabulateFloatfmtPrecision = cliArgs.tbl_flt_prcs
 
