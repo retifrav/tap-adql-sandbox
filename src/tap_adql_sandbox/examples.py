@@ -1,4 +1,28 @@
 examplesList = {
+    # ---
+    # PADC
+    # ---
+    "padc-tables":
+    {
+        "description": "All available tables",
+        "serviceURL": "http://voparis-tap-planeto.obspm.fr/tap",
+        "queryText": "".join((
+            "SELECT table_name\n"
+            "FROM tap_schema.tables\n"
+            "ORDER BY table_name"
+        ))
+    },
+    "padc-columns":
+    {
+        "description": "All available columns in a table",
+        "serviceURL": "http://voparis-tap-planeto.obspm.fr/tap",
+        "queryText": "".join((
+            "SELECT column_name, datatype, description\n",
+            "FROM tap_schema.columns\n",
+            "WHERE table_name='exoplanet.epn_core'\n",
+            "ORDER BY column_name"
+        ))
+    },
     "padc-stars-count":
     {
         "description": "Total number of stars",
@@ -17,14 +41,38 @@ examplesList = {
             "FROM exoplanet.epn_core"
         ))
     },
+    "padc-systems-with-minumum-planets":
+    {
+        "description": "Systems with minimum 6 planets",
+        "serviceURL": "http://voparis-tap-planeto.obspm.fr/tap",
+        "queryText": "".join((
+            "SELECT star_name, COUNT(*) as planets\n",
+            "FROM exoplanet.epn_core\n",
+            "WHERE star_name IS NOT NULL\n",
+            "GROUP BY star_name\n",
+            "HAVING COUNT(*) > 5\n",
+            "ORDER BY planets DESC"
+        ))
+    },
     "padc-system-planets":
     {
-        "description": "Planets in the system and their parameters",
+        "description": "Planets in the system",
+        "serviceURL": "http://voparis-tap-planeto.obspm.fr/tap",
+        "queryText": "".join((
+            "SELECT star_name, granule_uid, mass, radius, period, semi_major_axis\n",
+            "FROM exoplanet.epn_core\n",
+            "WHERE star_name = 'Kepler-107'\n",
+            "ORDER BY granule_uid"
+        ))
+    },
+    "padc-system-planets-with-not-null":
+    {
+        "description": "Planets with known parameters",
         "serviceURL": "http://voparis-tap-planeto.obspm.fr/tap",
         "queryText": "".join((
             "SELECT star_name, granule_uid, mass, radius\n",
             "FROM exoplanet.epn_core\n",
-            "WHERE star_name = 'Kepler-106'\n",
+            "WHERE star_name = 'HD 219134' AND mass IS NOT NULL AND radius IS NOT NULL\n",
             "ORDER BY granule_uid"
         ))
     },
@@ -37,6 +85,31 @@ examplesList = {
             "FROM exoplanet.epn_core\n",
             "WHERE star_metallicity IS NOT NULL\n",
             "ORDER BY star_metallicity DESC"
+        ))
+    },
+
+    # ---
+    # NASA
+    # ---
+    "nasa-tables":
+    {
+        "description": "All available tables",
+        "serviceURL": "https://exoplanetarchive.ipac.caltech.edu/TAP",
+        "queryText": "".join((
+            "SELECT table_name\n"
+            "FROM tap_schema.tables\n"
+            "ORDER BY table_name"
+        ))
+    },
+    "nasa-columns":
+    {
+        "description": "All available columns in the table",
+        "serviceURL": "https://exoplanetarchive.ipac.caltech.edu/TAP",
+        "queryText": "".join((
+            "SELECT column_name, datatype, description\n",
+            "FROM tap_schema.columns\n",
+            "WHERE table_name='ps'\n",
+            "ORDER BY column_name"
         ))
     },
     "nasa-stars-count":
@@ -70,7 +143,7 @@ examplesList = {
     },
     "nasa-planet-parameter-partition":
     {
-        "description": "Latest planet parameter in the system",
+        "description": "Most recent value of a planets parameter",
         "serviceURL": "https://exoplanetarchive.ipac.caltech.edu/TAP",
         "queryText": "".join((
             "SELECT * FROM\n",
@@ -81,7 +154,7 @@ examplesList = {
             "AS rank\n"
             "\tFROM ps WHERE hostname = 'Kepler-106')\n",
             "SELECT hostname, pl_name, pl_radj FROM latestEntries ",
-            "WHERE rank = 1)"
+            "WHERE rank = 1 ORDER BY pl_name)"
         ))
     }
 }
