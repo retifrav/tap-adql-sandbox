@@ -68,10 +68,10 @@ Tested on:
 ### Requirements
 
 - Python 3.6 or later (*though the oldest tested version is 3.7*)
-- [Dear PyGui](https://pypi.org/project/dearpygui/)
-- [PyVO](https://pypi.org/project/pyvo/)
-- [pandas](https://pypi.org/project/pandas/)
-- [tabulate](https://pypi.org/project/tabulate/)
+- [Dear PyGui](https://pypi.org/project/dearpygui/) - application window and UI controls
+- [PyVO](https://pypi.org/project/pyvo/) - handling TAP ADQL requests
+- [pandas](https://pypi.org/project/pandas/) - processing results and saving to pickle
+- [tabulate](https://pypi.org/project/tabulate/) - printing results to stdout (*with `--debug`*)
 
 ### Resources
 
