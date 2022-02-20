@@ -501,19 +501,25 @@ def main():
         label="About application",
         # https://github.com/retifrav/tap-adql-sandbox/issues/6
         # modal=True,
+        min_size=(600, 350),
         show=False
     ):
         dpg.add_text(
             "".join((
+                f"Version: {__version__}\n",
+                "License: GPLv3\n",
+                "Source code: https://github.com/retifrav/tap-adql-sandbox"
+            ))
+        )
+        dpg.add_text(
+            "".join((
                 "A sandbox application for executing ",
-                "ADQL queries via TAP interface\nof various data sources, ",
+                "ADQL queries via TAP interface\n",
+                "of various data sources, ",
                 "such as astronomical databases, using PyVO.\n",
                 "Essentially, this is a GUI for PyVO."
             ))
         )
-        dpg.add_text(f"Version: {__version__}")
-        dpg.add_text("Source code: https://github.com/retifrav/tap-adql-sandbox")
-        dpg.add_text("License: GPLv3")
         dpg.add_spacer()
         dpg.add_separator()
         dpg.add_spacer(height=5)
