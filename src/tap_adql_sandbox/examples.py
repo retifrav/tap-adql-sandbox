@@ -7,7 +7,7 @@ examplesList = {
         "description": "All available tables",
         "serviceURL": "http://voparis-tap-planeto.obspm.fr/tap",
         "queryText": "".join((
-            "SELECT table_name\n"
+            "SELECT table_name, description\n"
             "FROM tap_schema.tables\n"
             "ORDER BY table_name"
         ))
@@ -19,7 +19,7 @@ examplesList = {
         "queryText": "".join((
             "SELECT column_name, datatype, description\n",
             "FROM tap_schema.columns\n",
-            "WHERE table_name='exoplanet.epn_core'\n",
+            "WHERE table_name = 'exoplanet.epn_core'\n",
             "ORDER BY column_name"
         ))
     },
@@ -96,7 +96,7 @@ examplesList = {
         "description": "All available tables",
         "serviceURL": "https://exoplanetarchive.ipac.caltech.edu/TAP",
         "queryText": "".join((
-            "SELECT table_name\n"
+            "SELECT table_name, description\n"
             "FROM tap_schema.tables\n"
             "ORDER BY table_name"
         ))
@@ -108,7 +108,7 @@ examplesList = {
         "queryText": "".join((
             "SELECT column_name, datatype, description\n",
             "FROM tap_schema.columns\n",
-            "WHERE table_name='ps'\n",
+            "WHERE table_name = 'ps'\n",
             "ORDER BY column_name"
         ))
     },
