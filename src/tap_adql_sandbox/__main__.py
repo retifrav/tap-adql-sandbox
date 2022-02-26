@@ -9,6 +9,7 @@ from time import sleep
 import argparse
 import sys
 import traceback
+from typing import Tuple, Optional, Hashable, TypeVar
 
 from . import applicationPath, settingsFile
 from .version import __version__
@@ -24,27 +25,27 @@ from .theme import (
 )
 from .examples import examplesList
 
-debugMode = False
-noEnumerationColumn = False
+debugMode: bool = False
+noEnumerationColumn: bool = False
 
-mainWindowID = "main-window"
-queryTextID = "query-text"
+mainWindowID: str = "main-window"
+queryTextID: str = "query-text"
 
-tabulateFloatfmtPrecision = "g"
+tabulateFloatfmtPrecision: str = "g"
 
 # Dear PyGui (and Dear ImGui) has a limitation of 64 columns in a table
 # https://dearpygui.readthedocs.io/en/latest/documentation/tables.html
 # https://github.com/ocornut/imgui/issues/2957#issuecomment-758136035
 # https://github.com/ocornut/imgui/pull/4876
-dpgColumnsMax = 64
+dpgColumnsMax: int = 64
 
-windowMinWidth = 900
+windowMinWidth: int = 900
 
-lastQueryResults = {}
-executingQuery = False
+lastQueryResults: pandas.DataFrame = pandas.DataFrame()
+executingQuery: bool = False
 
 
-def showLoading(isLoading):
+def showLoading(isLoading) -> None:
     global executingQuery
 
     if isLoading:
@@ -59,7 +60,7 @@ def showLoading(isLoading):
         executingQuery = False
 
 
-def keyPressCallback(sender, app_data):
+def keyPressCallback(sender, app_data) -> None:
     global executingQuery
 
     # print(sender, app_data)
@@ -79,9 +80,10 @@ def keyPressCallback(sender, app_data):
         executeQuery()
 
 
-def executeQuery():
+def executeQuery() -> None:
     global lastQueryResults
-    lastQueryResults = {}
+    # clear previously saved results
+    lastQueryResults = pandas.DataFrame()
 
     dpg.hide_item("resultsGroup")
     if dpg.does_item_exist("resultsTable"):
@@ -92,8 +94,8 @@ def executeQuery():
     dpg.configure_item("menuSaveFile", enabled=False)
     showLoading(True)
 
-    serviceURL = dpg.get_value("serviceURL").strip()
-    queryText = dpg.get_value(queryTextID).strip()
+    serviceURL: str = dpg.get_value("serviceURL").strip()
+    queryText: str = dpg.get_value(queryTextID).strip()
 
     if not serviceURL:
         dpg.set_value("errorMessage", "No service URL provided")
@@ -110,7 +112,7 @@ def executeQuery():
     if debugMode:
         print(f"\n[DEBUG] Query to execute:\n{queryText}")
 
-    results = {}
+    results: pyvo.dal.DALResults = {}
     try:
         service = pyvo.dal.TAPService(serviceURL)
         results = service.search(queryText)
@@ -184,14 +186,15 @@ def executeQuery():
             for header in lastQueryResults:
                 dpg.add_table_column(label=header)
             for index, row in lastQueryResults.iterrows():
+                # reveal_type(index)
                 with dpg.table_row():
                     if not noEnumerationColumn and rowsCount > 1:
                         with dpg.table_cell():
-                            dpg.add_text(default_value=f"{index+1}")
+                            dpg.add_text(default_value=f"{index+1}")  # type: ignore
                     cellIndex = 1
                     for cell in row:
                         with dpg.table_cell():
-                            cellID = f"cell-{index+1}-{cellIndex}"
+                            cellID = f"cell-{index+1}-{cellIndex}"  # type: ignore
                             dpg.add_text(
                                 tag=cellID,
                                 default_value=cell
@@ -217,24 +220,24 @@ def executeQuery():
     dpg.configure_item("menuSaveFile", enabled=True)
 
 
-def preFillExample(sender, app_data, user_data):
+def preFillExample(sender, app_data, user_data) -> None:
     dpg.set_value("serviceURL", examplesList[user_data]["serviceURL"])
     dpg.set_value(queryTextID, examplesList[user_data]["queryText"])
 
 
-def saveResultsToPickle(sender, app_data, user_data):
+def saveResultsToPickle(sender, app_data, user_data) -> None:
     if debugMode:
         print(f"[DEBUG] {app_data}")
     # this check might be redundant,
     # as dialog window apparently performs it on its own
-    pickleFileDir = pathlib.Path(app_data["current_path"])
+    pickleFileDir: pathlib.Path = pathlib.Path(app_data["current_path"])
     if not pickleFileDir.is_dir():
         print(
             f"[ERROR] The {pickleFileDir} directory does not exist",
             file=sys.stderr
         )
         return
-    pickleFile = pickleFileDir / app_data["file_name"]
+    pickleFile: pathlib.Path = pickleFileDir / app_data["file_name"]
     try:
         lastQueryResults.to_pickle(pickleFile)
     except Exception as ex:
@@ -245,7 +248,7 @@ def saveResultsToPickle(sender, app_data, user_data):
         return
 
 
-def cellClicked(sender, app_data):
+def cellClicked(sender, app_data) -> None:
     # print(sender, app_data)
 
     # mouse right click
@@ -260,13 +263,13 @@ def cellClicked(sender, app_data):
         dpg.set_value(app_data[1], cellValue)
 
 
-def showDPGabout():
+def showDPGabout() -> None:
     # https://github.com/retifrav/tap-adql-sandbox/issues/6
     # dpg.hide_item("aboutWindow")
     dpg.show_about()
 
 
-def main():
+def main() -> None:
     global debugMode
     global tabulateFloatfmtPrecision
     global noEnumerationColumn

@@ -1,13 +1,14 @@
 import dearpygui.dearpygui as dpg
+from typing import Tuple
 from . import applicationPath
 
-styleRounding = 0
-stylePrimaryColor = (30, 120, 0)
-stylePrimaryColorActive = (30, 140, 0)
-styleSecondaryColor = (111, 111, 111, 80)
-styleSecondaryColorActive = (111, 111, 111, 100)
-styleHorizontalPadding = 12
-styleScrollbarWidth = 16
+styleRounding: int = 0
+stylePrimaryColor: Tuple[int, int, int] = (30, 120, 0)
+stylePrimaryColorActive: Tuple[int, int, int] = (30, 140, 0)
+styleSecondaryColor: Tuple[int, int, int, int] = (111, 111, 111, 80)
+styleSecondaryColorActive: Tuple[int, int, int, int] = (111, 111, 111, 100)
+styleHorizontalPadding: int = 12
+styleScrollbarWidth: int = 16
 
 
 def getGlobalFont():
