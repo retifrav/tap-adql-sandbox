@@ -9,7 +9,8 @@ from time import sleep
 import argparse
 import sys
 import traceback
-from typing import Tuple, Optional, Hashable, TypeVar
+import typing
+# from typing import Tuple, Optional, Hashable, TypeVar
 
 from . import applicationPath, settingsFile
 from .version import __version__
@@ -187,14 +188,15 @@ def executeQuery() -> None:
                 dpg.add_table_column(label=header)
             for index, row in lastQueryResults.iterrows():
                 # reveal_type(index)
+                index = typing.cast(int, index)
                 with dpg.table_row():
                     if not noEnumerationColumn and rowsCount > 1:
                         with dpg.table_cell():
-                            dpg.add_text(default_value=f"{index+1}")  # type: ignore
+                            dpg.add_text(default_value=f"{index+1}")
                     cellIndex = 1
                     for cell in row:
                         with dpg.table_cell():
-                            cellID = f"cell-{index+1}-{cellIndex}"  # type: ignore
+                            cellID = f"cell-{index+1}-{cellIndex}"
                             dpg.add_text(
                                 tag=cellID,
                                 default_value=cell
