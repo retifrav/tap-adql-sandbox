@@ -22,6 +22,8 @@ A sandbox application for executing ADQL queries via TAP interface of various da
 
 ![TAP ADQL sandbox](https://raw.githubusercontent.com/retifrav/tap-adql-sandbox/master/misc/screenshot-main-macos.png "TAP ADQL sandbox")
 
+More details in [this article](https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/).
+
 ### Demonstration
 
 https://user-images.githubusercontent.com/6904927/154367260-db2dc02c-ee88-4fe2-b500-cae14d51bd08.mp4
