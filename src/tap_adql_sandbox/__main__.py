@@ -13,7 +13,7 @@ import typing
 # from typing import Tuple, Optional, Hashable, TypeVar
 
 from . import applicationPath, settingsFile
-from .version import __version__
+from .version import __version__, __copyright__
 from .theme import (
     getGlobalFont,
     getGlobalTheme,
@@ -279,9 +279,9 @@ def main() -> None:
     argParser = argparse.ArgumentParser(
         prog="tap-adql-sandbox",
         description=" ".join((
-            "%(prog)s  Copyright (C) 2022  retif\nA",
+            f"%(prog)s\n{__copyright__}\nA",
             "sandbox application for executing ADQL queries",
-            "via TAP interface."
+            "via TAP interface"
         )),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         allow_abbrev=False
@@ -506,16 +506,9 @@ def main() -> None:
         label="About application",
         # https://github.com/retifrav/tap-adql-sandbox/issues/6
         # modal=True,
-        min_size=(600, 350),
+        min_size=(780, 380),
         show=False
     ):
-        dpg.add_text(
-            "".join((
-                f"Version: {__version__}\n",
-                "License: GPLv3\n",
-                "Source code: https://github.com/retifrav/tap-adql-sandbox"
-            ))
-        )
         dpg.add_text(
             "".join((
                 "A sandbox application for executing ",
@@ -525,6 +518,18 @@ def main() -> None:
                 "Essentially, this is a GUI for PyVO."
             ))
         )
+
+        dpg.add_text(f"Version: {__version__}")
+
+        dpg.add_text(
+            "".join((
+                "License: GPLv3\n",
+                "Source code: https://github.com/retifrav/tap-adql-sandbox"
+            ))
+        )
+
+        dpg.add_text(__copyright__)
+
         dpg.add_spacer()
         dpg.add_separator()
         dpg.add_spacer(height=5)
@@ -594,5 +599,5 @@ def main() -> None:
     dpg.destroy_context()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
