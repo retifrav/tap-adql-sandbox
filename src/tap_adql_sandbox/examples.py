@@ -9,6 +9,7 @@ examplesList = {
         "queryText": "".join((
             "SELECT table_name, description\n"
             "FROM tap_schema.tables\n"
+            "WHERE table_type = 'table'\n"
             "ORDER BY table_name"
         ))
     },
@@ -98,6 +99,7 @@ examplesList = {
         "queryText": "".join((
             "SELECT table_name, description\n"
             "FROM tap_schema.tables\n"
+            "WHERE table_type = 'table'\n"
             "ORDER BY table_name"
         ))
     },
