@@ -15,7 +15,7 @@ examplesList = {
     },
     "padc-columns":
     {
-        "description": "All available columns in a table",
+        "description": "All available columns in the table",
         "serviceURL": "http://voparis-tap-planeto.obspm.fr/tap",
         "queryText": "".join((
             "SELECT column_name, datatype, description\n",
@@ -88,7 +88,6 @@ examplesList = {
             "ORDER BY star_metallicity DESC"
         ))
     },
-
     # ---
     # NASA
     # ---
@@ -158,5 +157,30 @@ examplesList = {
             "SELECT hostname, pl_name, pl_radj FROM latestEntries ",
             "WHERE rank = 1 ORDER BY pl_name)"
         ))
-    }
+    },
+    # ---
+    # Gaia
+    # ---
+    "gaia-tables":
+    {
+        "description": "All available tables",
+        "serviceURL": "https://gea.esac.esa.int/tap-server/tap",
+        "queryText": "".join((
+            "SELECT table_name\n"
+            "FROM tap_schema.tables\n"
+            "WHERE table_type = 'table'\n"
+            "ORDER BY table_name"
+        ))
+    },
+    "gaia-columns":
+    {
+        "description": "All available columns in the table",
+        "serviceURL": "https://gea.esac.esa.int/tap-server/tap",
+        "queryText": "".join((
+            "SELECT column_name, datatype, description\n",
+            "FROM tap_schema.columns\n",
+            "WHERE table_name = 'gaiadr2.gaia_source'\n",
+            "ORDER BY column_name"
+        ))
+    },
 }

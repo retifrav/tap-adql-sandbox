@@ -411,6 +411,16 @@ def main() -> None:
                                 user_data=exmpl,
                                 callback=preFillExample
                             )
+                    with dpg.menu(label="Gaia"):
+                        for exmpl in {
+                            k: v for k, v in examplesList.items()
+                            if k.startswith("gaia-")
+                        }:
+                            dpg.add_menu_item(
+                                label=examplesList[exmpl]["description"],
+                                user_data=exmpl,
+                                callback=preFillExample
+                            )
                 dpg.add_spacer()
                 dpg.add_separator()
                 dpg.add_spacer()
