@@ -118,6 +118,8 @@ def executeQuery() -> None:
         service = pyvo.dal.TAPService(serviceURL)
         results = service.search(queryText)
     except Exception as ex:
+        if debugMode:
+            print(f"\n[DEBUG] Query failed: {ex}")
         dpg.set_value("errorMessage", ex)
         dpg.show_item("errorMessage")
         showLoading(False)

@@ -10,6 +10,9 @@
 - [Running](#running)
 - [Platforms](#platforms)
 - [Known problems](#known-problems)
+    - [Application tries to connect to remote hosts on startup and sometimes crashes](#application-tries-to-connect-to-remote-hosts-on-startup-and-sometimes-crashes)
+    - [Application crashes when query has too many columns](#application-crashes-when-query-has-too-many-columns)
+    - [Queries might fail with UnicodeDecodeError](#queries-might-fail-with-unicodedecodeerror)
 - [3rd-party](#3rd-party)
     - [Requirements](#requirements)
     - [Resources](#resources)
@@ -72,7 +75,33 @@ Tested on:
 
 ## Known problems
 
-- if `SELECT` requests a lot of columns, the results table [might not have](https://github.com/retifrav/tap-adql-sandbox/issues/8) visible contents, or the application [might just crash](https://github.com/retifrav/tap-adql-sandbox/issues/14)
+### Application tries to connect to remote hosts on startup and sometimes crashes
+
+Sometimes when you are just launching the application, so you didn't even have a chance to execute any queries, you might notice that it tries to reach various remote hosts on the internet, such as `obspm.fr`, `ietf.org` or probably others.
+
+This is because of the [Astropy](https://astropy.org) package, which is an indirect dependency through PyVO, which is a direct dependency of this project. Specifically, it's the hosts listed in [this file](https://github.com/astropy/astropy/blob/main/astropy/utils/iers/iers.py). Looks harmless enough, apparently just updating some astronomical data.
+
+Denying access to these hosts might lead to the application crash, because Astropy doesn't handle such situation properly:
+
+```
+AttributeError: module 'IPython.utils.io' has no attribute 'stdout'
+```
+
+If you get the application crashing even when access to those is allowed, try to update the Astropy (*and probably also PyVO*) package:
+
+``` sh
+$ pip install astropy -U
+```
+
+I had this problem with Astropy v4.2, and it was gone after updating to Astropy v5.1. Or perhaps the problem isn't really gone, but the new package version just came with updated data, so for now there is no need for updating.
+
+### Application crashes when query has too many columns
+
+If your query/request has a lot of columns in `SELECT`, the results table [might not have](https://github.com/retifrav/tap-adql-sandbox/issues/8) visible contents, or the application [might just crash](https://github.com/retifrav/tap-adql-sandbox/issues/14).
+
+### Queries might fail with UnicodeDecodeError
+
+If query results from a TAP service contain non-ASCII symbols, then PyVO will raise [an exception](https://github.com/retifrav/tap-adql-sandbox/issues/19). The application won't crash, but you won't get query results either.
 
 ## 3rd-party
 
