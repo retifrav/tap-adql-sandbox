@@ -179,8 +179,18 @@ examplesList = {
         "queryText": "".join((
             "SELECT column_name, datatype, description\n",
             "FROM tap_schema.columns\n",
-            "WHERE table_name = 'gaiadr2.gaia_source'\n",
+            "WHERE table_name = 'gaiadr3.gaia_source'\n",
             "ORDER BY column_name"
         ))
     },
+    "gaia-star-parameters":
+    {
+        "description": "Star parameters",
+        "serviceURL": "https://gea.esac.esa.int/tap-server/tap",
+        "queryText": "".join((
+            "SELECT source_id, solution_id, radius_flame_spec, mass_flame_spec\n",
+            "FROM gaiadr3.astrophysical_parameters_supp\n",
+            "WHERE source_id = 3145754895088191744"
+        ))
+    }
 }

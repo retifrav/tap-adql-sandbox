@@ -2,6 +2,7 @@
 
 <!-- MarkdownTOC -->
 
+- [0.7.1](#071)
 - [0.7.0](#070)
 - [0.6.0](#060)
 - [0.5.1](#051)
@@ -12,6 +13,15 @@
 - [0.1.0](#010)
 
 <!-- /MarkdownTOC -->
+
+## 0.7.1
+
+Released on `2022-10-09`.
+
+- queries examples for [Gaia Archive](https://gea.esac.esa.int/archive/) database
+- tables descriptions in example queries, more precise querying exactly for tables
+- more compact About window contents
+- lowered Python requirement to v3.6 (*should be fine*)
 
 ## 0.7.0
 
