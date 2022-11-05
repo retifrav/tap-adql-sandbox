@@ -186,7 +186,7 @@ def executeQuery() -> None:
         ):
             if not noEnumerationColumn and rowsCount > 1:
                 dpg.add_table_column(label="#")
-            for header in lastQueryResults:
+            for header in lastQueryResults.columns:
                 dpg.add_table_column(label=header)
             for index, row in lastQueryResults.iterrows():
                 # reveal_type(index)
