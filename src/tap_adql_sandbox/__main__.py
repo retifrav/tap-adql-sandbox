@@ -269,8 +269,7 @@ def cellClicked(sender, app_data) -> None:
 
 
 def showDPGabout() -> None:
-    # https://github.com/retifrav/tap-adql-sandbox/issues/6
-    # dpg.hide_item("aboutWindow")
+    dpg.hide_item("aboutWindow")
     dpg.show_about()
 
 
@@ -531,9 +530,8 @@ def main() -> None:
     with dpg.window(
         tag="aboutWindow",
         label="About application",
-        # https://github.com/retifrav/tap-adql-sandbox/issues/6
-        # modal=True,
         min_size=(780, 380),
+        modal=True,
         show=False
     ):
         dpg.add_text(
