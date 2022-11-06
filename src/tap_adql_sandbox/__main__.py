@@ -10,8 +10,8 @@ from time import sleep
 import argparse
 import sys
 import traceback
+import webbrowser
 import typing
-# from typing import Tuple, Optional, Hashable, TypeVar
 
 from . import applicationPath, settingsFile
 from .version import __version__, __copyright__
@@ -22,6 +22,7 @@ from .theme import (
     getWindowTheme,
     getCellHighlightedTheme,
     getCellDefaultTheme,
+    getHyperlinkTheme,
     styleHorizontalPadding,
     styleScrollbarWidth
 )
@@ -32,6 +33,8 @@ noEnumerationColumn: bool = False
 
 mainWindowID: str = "main-window"
 queryTextID: str = "query-text"
+
+repositoryURL: str = "https://github.com/retifrav/tap-adql-sandbox"
 
 tabulateFloatfmtPrecision: str = "g"
 
@@ -45,6 +48,14 @@ windowMinWidth: int = 900
 
 lastQueryResults: pandas.DataFrame = pandas.DataFrame()
 executingQuery: bool = False
+
+
+def add_hyperlink(text, address):
+    b = dpg.add_button(
+        label=text,
+        callback=lambda: webbrowser.open(address)
+    )
+    dpg.bind_item_theme(b, getHyperlinkTheme())
 
 
 def showLoading(isLoading) -> None:
@@ -530,8 +541,8 @@ def main() -> None:
     with dpg.window(
         tag="aboutWindow",
         label="About application",
-        min_size=(780, 380),
         modal=True,
+        min_size=(780, 440),
         show=False
     ):
         dpg.add_text(
@@ -546,12 +557,10 @@ def main() -> None:
 
         dpg.add_text(f"Version: {__version__}")
 
-        dpg.add_text(
-            "".join((
-                "License: GPLv3\n",
-                "Source code: https://github.com/retifrav/tap-adql-sandbox"
-            ))
-        )
+        dpg.add_text("License: GPLv3")
+        with dpg.group(horizontal=True):
+            dpg.add_text("Source code:")
+            add_hyperlink(repositoryURL, repositoryURL)
 
         dpg.add_text(__copyright__)
 

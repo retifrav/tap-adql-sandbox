@@ -197,3 +197,16 @@ def getWindowTheme():
                 category=dpg.mvThemeCat_Core
             )
         return aboutTheme
+
+
+def getHyperlinkTheme():
+    with dpg.theme() as hyperlinkTheme:
+        with dpg.theme_component(dpg.mvButton):
+            dpg.add_theme_color(dpg.mvThemeCol_Button, [0, 0, 0, 0])
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, [0, 0, 0, 0])
+            dpg.add_theme_color(
+                dpg.mvThemeCol_ButtonHovered,
+                [29, 151, 236, 25]
+            )
+            dpg.add_theme_color(dpg.mvThemeCol_Text, [29, 151, 236])
+        return hyperlinkTheme
