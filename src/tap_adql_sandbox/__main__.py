@@ -1,5 +1,6 @@
 # dependencies
 import dearpygui.dearpygui as dpg
+from dearpygui.demo import show_demo
 from tabulate import tabulate
 import pathlib
 import pandas
@@ -384,8 +385,22 @@ def main() -> None:
                         label="Styling",
                         callback=lambda: dpg.show_style_editor()
                     )
+                    dpg.add_spacer()
+                    dpg.add_separator()
+                    dpg.add_spacer()
                     dpg.add_menu_item(
-                        label="ImGui demo",
+                        label="Documentation",
+                        callback=lambda: dpg.show_documentation()
+                    )
+                    dpg.add_spacer()
+                    dpg.add_separator()
+                    dpg.add_spacer()
+                    dpg.add_menu_item(
+                        label="Dear PyGui demo",
+                        callback=lambda: show_demo()
+                    )
+                    dpg.add_menu_item(
+                        label="Dear ImGui demo",
                         callback=lambda: dpg.show_imgui_demo()
                     )
 
