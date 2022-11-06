@@ -50,7 +50,7 @@ lastQueryResults: pandas.DataFrame = pandas.DataFrame()
 executingQuery: bool = False
 
 
-def add_hyperlink(text, address):
+def add_hyperlink(text: str, address: str):
     b = dpg.add_button(
         label=text,
         callback=lambda: webbrowser.open(address)
@@ -58,7 +58,7 @@ def add_hyperlink(text, address):
     dpg.bind_item_theme(b, getHyperlinkTheme())
 
 
-def showLoading(isLoading) -> None:
+def showLoading(isLoading: bool) -> None:
     global executingQuery
 
     if isLoading:
@@ -223,7 +223,8 @@ def executeQuery() -> None:
     except Exception as ex:
         errorMsg = "Couldn't generate the results table"
         print(f"[ERROR] {errorMsg}. {ex}", file=sys.stderr)
-        traceback.print_exc(file=sys.stderr)
+        if debugMode:
+            traceback.print_exc(file=sys.stderr)
         dpg.set_value(
             "errorMessage",
             f"{errorMsg}. There might be more details in console/stderr."
