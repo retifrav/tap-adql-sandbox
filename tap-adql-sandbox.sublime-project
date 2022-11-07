@@ -2,7 +2,12 @@
     "folders":
     [
         {
-            "path": "."
+            "path": ".",
+            "folder_exclude_patterns": [
+                ".mypy_cache",
+                "*.egg-info",
+                "__pycache__"
+            ]
         }
     ]
 }
