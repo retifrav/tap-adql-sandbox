@@ -2,6 +2,7 @@
 
 <!-- MarkdownTOC -->
 
+- [0.7.2](#072)
 - [0.7.1](#071)
 - [0.7.0](#070)
 - [0.6.0](#060)
@@ -13,6 +14,16 @@
 - [0.1.0](#010)
 
 <!-- /MarkdownTOC -->
+
+## 0.7.2
+
+Released on `2022-11-20`.
+
+- better loading indicator
+- smaller query text area
+- clickable link with repository URL
+- some more development menu items
+- some small bugfixes
 
 ## 0.7.1
 
