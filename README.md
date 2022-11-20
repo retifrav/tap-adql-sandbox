@@ -23,7 +23,7 @@
 
 A sandbox application for executing ADQL queries via TAP interface of various data sources, such as astronomical databases. Essentially, it's just a GUI for [PyVO](https://pypi.org/project/pyvo/).
 
-![TAP ADQL sandbox](https://raw.githubusercontent.com/retifrav/tap-adql-sandbox/master/misc/screenshot-main-macos.png "TAP ADQL sandbox")
+![TAP ADQL sandbox application window](https://raw.githubusercontent.com/retifrav/tap-adql-sandbox/master/misc/screenshot-main-macos.png "TAP ADQL sandbox")
 
 More details in [this article](https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/).
 

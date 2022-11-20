@@ -16,6 +16,8 @@ import typing
 from . import applicationPath, settingsFile
 from .version import __version__, __copyright__
 from .theme import (
+    stylePrimaryColor,
+    stylePrimaryColorActive,
     getGlobalFont,
     getGlobalTheme,
     getErrorTheme,
@@ -473,7 +475,7 @@ def main() -> None:
                 "WHERE some_thing = 1"
             )),
             width=-1,
-            height=350,
+            height=300,
             multiline=True,
             tab_input=True
         )
@@ -484,9 +486,12 @@ def main() -> None:
         )
         dpg.add_loading_indicator(
             tag="loadingAnimation",
-            radius=2,
-            speed=3,
-            indent=10,
+            style=1,
+            radius=2.0,
+            # speed=2,
+            indent=7,
+            color=stylePrimaryColorActive,
+            secondary_color=stylePrimaryColor,
             show=False
         )
 
