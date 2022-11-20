@@ -19,7 +19,7 @@
 
 Released on `2022-11-20`.
 
-- better loading indicator
+- better looking loading/busy indicator
 - smaller query text area
 - clickable link with repository URL
 - some more development menu items
