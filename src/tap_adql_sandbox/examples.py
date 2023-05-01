@@ -188,8 +188,8 @@ examplesList = {
         "description": "Star parameters",
         "serviceURL": "https://gea.esac.esa.int/tap-server/tap",
         "queryText": "".join((
-            "SELECT source_id, solution_id, radius_flame_spec, mass_flame_spec\n",
-            "FROM gaiadr3.astrophysical_parameters_supp\n",
+            "SELECT source_id, solution_id, mass_flame, radius_flame\n",
+            "FROM gaiadr3.astrophysical_parameters\n",
             "WHERE source_id = 3145754895088191744"
         ))
     }
