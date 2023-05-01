@@ -1,6 +1,7 @@
 # dependencies
 import dearpygui.dearpygui as dpg
 from dearpygui.demo import show_demo
+from astroquery.simbad import Simbad
 from tabulate import tabulate
 import pathlib
 import pandas
@@ -73,6 +74,118 @@ def showLoading(isLoading: bool) -> None:
         dpg.show_item("btnExecuteQuery")
         dpg.configure_item("menuExecuteQuery", enabled=True)
         executingQuery = False
+
+
+def getSimbadIDs() -> None:
+    dpg.hide_item("resultsGroupSimbadIDs")
+    if dpg.does_item_exist("resultsTableSimbadIDs"):
+        dpg.delete_item("resultsTableSimbadIDs")
+    dpg.hide_item("errorMessageSimbadIDs")
+    dpg.set_value("errorMessageSimbadIDs", "")
+
+    dpg.hide_item("btn_getSimbadIDs")
+    dpg.show_item("loadingAnimationSimbadIDs")
+
+    idToLookUpInSimbad: str = dpg.get_value("idToLookUpInSimbad").strip()
+
+    if not idToLookUpInSimbad:
+        dpg.set_value("errorMessageSimbadIDs", "No ID provided")
+        dpg.show_item("errorMessageSimbadIDs")
+        dpg.hide_item("loadingAnimationSimbadIDs")
+        dpg.show_item("btn_getSimbadIDs")
+        return
+
+    oids = None
+    try:
+        oids = Simbad.query_objectids(idToLookUpInSimbad)
+    except Exception as ex:
+        dpg.set_value("errorMessageSimbadIDs", ex)
+        dpg.show_item("errorMessageSimbadIDs")
+        dpg.hide_item("loadingAnimationSimbadIDs")
+        dpg.show_item("btn_getSimbadIDs")
+        return
+
+    if oids:
+        oidsCnt: int = len(oids)
+        if debugMode:
+            print("\n[DEBUG] IDs found in Simbad:", oidsCnt)
+            try:
+                print(
+                    tabulate(
+                        oids,
+                        headers=oids.colnames,
+                        tablefmt="psql",
+                        floatfmt=tabulateFloatfmtPrecision
+                    )
+                )
+            except Exception as ex:
+                print(f"[WARNING] Couldn't print results. {ex}")
+        try:
+            with dpg.table(
+                parent="resultsGroupSimbadIDs",
+                tag="resultsTableSimbadIDs",
+                header_row=True,
+                resizable=True,
+                borders_outerH=True,
+                borders_innerV=True,
+                borders_innerH=True,
+                borders_outerV=True,
+                clipper=True,
+                # row_background=True,
+                # freeze_rows=0,
+                # freeze_columns=1,
+                # scrollY=True
+            ):
+                dpg.add_table_column(label="#", init_width_or_weight=0.05)
+                for header in oids.colnames:
+                    dpg.add_table_column(label=header)
+                index = 0
+                for o in oids:
+                    # reveal_type(index)
+                    with dpg.table_row():
+                        with dpg.table_cell():
+                            dpg.add_text(default_value=f"{index+1}")
+                        with dpg.table_cell():
+                            cellID = f"cellSimbadID-{index+1}"
+                            dpg.add_text(
+                                tag=cellID,
+                                default_value=o["ID"]
+                            )
+                            dpg.bind_item_handler_registry(
+                                cellID,
+                                "cell-handler"
+                            )
+                        index += 1
+        except Exception as ex:
+            errorMsg = "Couldn't generate the results table"
+            print(f"[ERROR] {errorMsg}. {ex}", file=sys.stderr)
+            if debugMode:
+                traceback.print_exc(file=sys.stderr)
+            dpg.set_value(
+                "errorMessageSimbadIDs",
+                f"{errorMsg}. There might be more details in console/stderr."
+            )
+            dpg.show_item("errorMessageSimbadIDs")
+            dpg.hide_item("loadingAnimationSimbadIDs")
+            dpg.show_item("btn_getSimbadIDs")
+            return
+        dpg.hide_item("loadingAnimationSimbadIDs")
+        dpg.show_item("btn_getSimbadIDs")
+        dpg.show_item("resultsGroupSimbadIDs")
+    else:
+        dpg.set_value(
+            "errorMessageSimbadIDs",
+            "Simbad doesn't have any IDs for this object"
+        )
+        dpg.show_item("errorMessageSimbadIDs")
+        dpg.hide_item("loadingAnimationSimbadIDs")
+        dpg.show_item("btn_getSimbadIDs")
+        return
+
+
+def showSimbadIDsWindow() -> None:
+    dpg.hide_item("menu_getSimbadIDs")
+    dpg.show_item("window_simbadIDs")
 
 
 def keyPressCallback(sender, app_data) -> None:
@@ -342,6 +455,51 @@ def main() -> None:
     dpg.set_exit_callback(callback=lambda: dpg.save_init_file(settingsFile))
 
     #
+    # --- Simbad IDs window
+    #
+    with dpg.window(
+        tag="window_simbadIDs",
+        label="Simbad IDs",
+        min_size=(550, 650),
+        show=False,
+        on_close=lambda: dpg.show_item("menu_getSimbadIDs")
+    ):
+        dpg.add_input_text(
+            tag="idToLookUpInSimbad",
+            hint="ID to lookup in Simbad",
+            width=-1
+        )
+        dpg.add_button(
+            tag="btn_getSimbadIDs",
+            label="Lookup",
+            callback=getSimbadIDs
+        )
+        dpg.add_loading_indicator(
+            tag="loadingAnimationSimbadIDs",
+            style=1,
+            radius=1.5,
+            # speed=2,
+            indent=7,
+            color=stylePrimaryColorActive,
+            secondary_color=stylePrimaryColor,
+            show=False
+        )
+
+        dpg.add_spacer()
+
+        dpg.add_text(
+            tag="errorMessageSimbadIDs",
+            default_value="Error",
+            # https://github.com/hoffstadt/DearPyGui/issues/1275
+            wrap=500,  # window width - 50
+            show=False
+        )
+
+        with dpg.group(tag="resultsGroupSimbadIDs", show=False):
+            dpg.add_text(default_value="Found the following IDs:")
+            with dpg.table(tag="resultsTableSimbadIDs"):
+                dpg.add_table_column(label="ResultsSimbadIDs")
+    #
     # --- main window
     #
     with dpg.window(tag=mainWindowID):
@@ -383,6 +541,13 @@ def main() -> None:
             #         label="Setting 2",
             #         callback=lambda: print("ololo")
             #     )
+
+            with dpg.menu(label="Tools"):
+                dpg.add_menu_item(
+                    tag="menu_getSimbadIDs",
+                    label="Lookup IDs in Simbad",
+                    callback=showSimbadIDsWindow
+                )
 
             if debugMode:
                 with dpg.menu(label="Dev"):
@@ -592,6 +757,7 @@ def main() -> None:
     dpg.bind_font(getGlobalFont())
     dpg.bind_theme(getGlobalTheme())
     dpg.bind_item_theme("errorMessage", getErrorTheme())
+    dpg.bind_item_theme("errorMessageSimbadIDs", getErrorTheme())
     dpg.bind_item_theme("aboutWindow", getWindowTheme())
     # dpg.bind_item_theme("errorDialog", getWindowTheme())
     # dpg.bind_item_theme("errorDialogText", getErrorTheme())

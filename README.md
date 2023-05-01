@@ -110,6 +110,7 @@ If query results from a TAP service contain non-ASCII symbols, then PyVO will ra
 - Python 3.6 or later (*though the oldest tested version is 3.7*)
 - [Dear PyGui](https://pypi.org/project/dearpygui/) - application window and UI controls
 - [PyVO](https://pypi.org/project/pyvo/) - handling TAP ADQL requests
+- [Astroquery](https://pypi.org/project/astroquery/) - looking up IDs in Simbad
 - [pandas](https://pypi.org/project/pandas/) - processing results and saving to pickle
 - [tabulate](https://pypi.org/project/tabulate/) - printing results to stdout (*with `--debug`*)
 
