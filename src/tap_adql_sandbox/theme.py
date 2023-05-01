@@ -160,7 +160,7 @@ def getErrorTheme():
         with dpg.theme_component(dpg.mvAll):
             dpg.add_theme_color(
                 dpg.mvThemeCol_Text,
-                (255, 0, 0),
+                (255, 30, 30),
                 category=dpg.mvThemeCat_Core
             )
         return errorTheme
