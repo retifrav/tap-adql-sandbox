@@ -410,7 +410,7 @@ def main() -> None:
         description=" ".join((
             f"%(prog)s\n{__copyright__}\nA",
             "sandbox application for executing ADQL queries",
-            "via TAP interface"
+            "via TAP interface of various data sources"
         )),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         allow_abbrev=False

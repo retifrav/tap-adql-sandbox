@@ -2,6 +2,7 @@
 
 <!-- MarkdownTOC -->
 
+- [0.8.0](#080)
 - [0.7.2](#072)
 - [0.7.1](#071)
 - [0.7.0](#070)
@@ -14,6 +15,14 @@
 - [0.1.0](#010)
 
 <!-- /MarkdownTOC -->
+
+## 0.8.0
+
+Released on `2023-05-01`.
+
+- dedicated window for looking up IDs in Simbad
+- bit more readable errors text color
+- different table in Gaia example query
 
 ## 0.7.2
 

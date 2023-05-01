@@ -14,7 +14,7 @@
     - [Application crashes when query has too many columns](#application-crashes-when-query-has-too-many-columns)
     - [Queries might fail with UnicodeDecodeError](#queries-might-fail-with-unicodedecodeerror)
 - [3rd-party](#3rd-party)
-    - [Requirements](#requirements)
+    - [Dependencies](#dependencies)
     - [Resources](#resources)
 
 <!-- /MarkdownTOC -->
@@ -105,9 +105,9 @@ If query results from a TAP service contain non-ASCII symbols, then PyVO will ra
 
 ## 3rd-party
 
-### Requirements
+### Dependencies
 
-- Python 3.6 or later (*though the oldest tested version is 3.7*)
+- Python 3.6 or later (*the oldest tested is 3.7, though*)
 - [Dear PyGui](https://pypi.org/project/dearpygui/) - application window and UI controls
 - [PyVO](https://pypi.org/project/pyvo/) - handling TAP ADQL requests
 - [Astroquery](https://pypi.org/project/astroquery/) - looking up IDs in Simbad
