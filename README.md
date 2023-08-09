@@ -51,7 +51,7 @@ or:
 ``` sh
 $ cd /path/to/repository/
 $ python -m build
-$ pip install ./dist/tap_adql_sandbox-*-py3-none-any.whl
+$ pip install ./dist/tap_adql_sandbox-VERSION-py3-none-any.whl
 ```
 
 ## Running
