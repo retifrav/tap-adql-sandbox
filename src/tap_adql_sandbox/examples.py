@@ -1,4 +1,6 @@
-tapServices = {
+import typing
+
+tapServices: typing.Dict[str, typing.Dict] = {
     "padc": {
         "name": "PADC",
         "url": "http://voparis-tap-planeto.obspm.fr/tap",

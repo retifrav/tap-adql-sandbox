@@ -107,12 +107,14 @@ If query results from a TAP service contain non-ASCII symbols, then PyVO will ra
 
 ### Dependencies
 
-- Python 3.6 or later (*the oldest tested is 3.7, though*)
+- Python `3.6` or later (*should work with `3.6`, but the oldest tested version is actually `3.7`*)
 - [Dear PyGui](https://pypi.org/project/dearpygui/) - application window and UI controls
 - [PyVO](https://pypi.org/project/pyvo/) - handling TAP ADQL requests
 - [Astroquery](https://pypi.org/project/astroquery/) - looking up IDs in Simbad
 - [pandas](https://pypi.org/project/pandas/) - processing results and saving to pickle
 - [tabulate](https://pypi.org/project/tabulate/) - printing results to stdout (*with `--debug`*)
+- transitive (*dependencies of dependencies*):
+    + [NumPy](https://pypi.org/project/numpy/) comes through Astroquery(?), and at the moment it will only work with versions before `2.0.0`, the last tested version is `1.26.4`
 
 ### Resources
 

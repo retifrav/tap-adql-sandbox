@@ -2,6 +2,7 @@
 
 <!-- MarkdownTOC -->
 
+- [0.8.1](#081)
 - [0.8.0](#080)
 - [0.7.2](#072)
 - [0.7.1](#071)
@@ -16,11 +17,18 @@
 
 <!-- /MarkdownTOC -->
 
+## 0.8.1
+
+Released on `2024-08-23`.
+
+- added example queries for the TAP service from [SIMBAD](http://simbad.cds.unistra.fr/simbad/)
+- refactored examples menu generation
+
 ## 0.8.0
 
 Released on `2023-05-01`.
 
-- dedicated window for looking up IDs in Simbad
+- dedicated window for looking up IDs in [SIMBAD](http://simbad.cds.unistra.fr/simbad/)
 - bit more readable errors text color
 - different table in Gaia example query
 
