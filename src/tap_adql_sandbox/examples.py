@@ -1,10 +1,12 @@
 import typing
 
 tapServices: typing.Dict[str, typing.Dict] = {
-    "padc": {
+    "padc":
+    {
         "name": "PADC",
         "url": "http://voparis-tap-planeto.obspm.fr/tap",
-        "examples": [
+        "examples":
+        [
             {
                 "description": "All available tables",
                 "query": "".join((
@@ -77,10 +79,12 @@ tapServices: typing.Dict[str, typing.Dict] = {
             }
         ]
     },
-    "nasa": {
+    "nasa":
+    {
         "name": "NASA",
         "url": "https://exoplanetarchive.ipac.caltech.edu/TAP",
-        "examples": [
+        "examples":
+        [
             {
                 "description": "All available tables",
                 "query": "".join((
@@ -138,10 +142,12 @@ tapServices: typing.Dict[str, typing.Dict] = {
             }
         ]
     },
-    "gaia": {
+    "gaia":
+    {
         "name": "Gaia",
         "url": "https://gea.esac.esa.int/tap-server/tap",
-        "examples": [
+        "examples":
+        [
             {
                 "description": "All available tables",
                 "query": "".join((
@@ -170,10 +176,12 @@ tapServices: typing.Dict[str, typing.Dict] = {
             }
         ]
     },
-    "simbad": {
+    "simbad":
+    {
         "name": "SIMBAD",
         "url": "http://simbad.cds.unistra.fr/simbad/sim-tap/sync",
-        "examples": [
+        "examples":
+        [
             {
                 "description": "All available tables",
                 "query": "".join((
