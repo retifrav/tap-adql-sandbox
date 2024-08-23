@@ -10,6 +10,10 @@ tapServices = {
     "gaia": {
         "name": "Gaia",
         "url": "https://gea.esac.esa.int/tap-server/tap"
+    },
+    "simbad": {
+        "name": "SIMBAD",
+        "url": "http://simbad.cds.unistra.fr/simbad/sim-tap/sync"
     }
 }
 
@@ -206,6 +210,51 @@ examplesList = {
             "SELECT source_id, solution_id, mass_flame, radius_flame\n",
             "FROM gaiadr3.astrophysical_parameters\n",
             "WHERE source_id = 3145754895088191744"
+        ))
+    },
+    # ---
+    # SIMBAD
+    # ---
+    "simbad-tables":
+    {
+        "description": "All available tables",
+        "serviceURL": tapServices["simbad"]["url"],
+        "queryText": "".join((
+            "SELECT table_name\n"
+            "FROM tap_schema.tables\n"
+            "WHERE table_type = 'table'\n"
+            "ORDER BY table_name"
+        ))
+    },
+    "simbad-columns":
+    {
+        "description": "All available columns in the table",
+        "serviceURL": tapServices["simbad"]["url"],
+        "queryText": "".join((
+            "SELECT column_name, datatype, description\n",
+            "FROM tap_schema.columns\n",
+            "WHERE table_name = 'basic'\n",
+            "ORDER BY column_name"
+        ))
+    },
+    "simbad-oid":
+    {
+        "description": "Object ID by name",
+        "serviceURL": tapServices["simbad"]["url"],
+        "queryText": "".join((
+            "SELECT oid FROM basic\n",
+            "WHERE main_id = 'CD-29 2360'"
+        ))
+    },
+    "simbad-star-parameters":
+    {
+        "description": "Star parameter by publications",
+        "serviceURL": tapServices["simbad"]["url"],
+        "queryText": "".join((
+            "SELECT v.period, v.bibcode FROM mesVar AS v\n",
+            "JOIN basic AS b ON v.oidref = b.oid\n",
+            "WHERE b.main_id = 'CD-29 2360'\n",
+            "ORDER BY bibcode DESC"
         ))
     }
 }
