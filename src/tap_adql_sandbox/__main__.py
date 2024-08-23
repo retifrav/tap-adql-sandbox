@@ -29,13 +29,14 @@ from .theme import (
     styleHorizontalPadding,
     styleScrollbarWidth
 )
-from .examples import tapServices, examplesList
+from .examples import tapServices
 
 debugMode: bool = False
 noEnumerationColumn: bool = False
 
 mainWindowID: str = "main-window"
 queryTextID: str = "query-text"
+serviceUrlID: str = "service-url"
 
 repositoryURL: str = "https://github.com/retifrav/tap-adql-sandbox"
 
@@ -222,7 +223,7 @@ def executeQuery() -> None:
     dpg.configure_item("menuSaveFile", enabled=False)
     showLoading(True)
 
-    serviceURL: str = dpg.get_value("serviceURL").strip()
+    serviceURL: str = dpg.get_value(serviceUrlID).strip()
     queryText: str = dpg.get_value(queryTextID).strip()
 
     if not serviceURL:
@@ -352,24 +353,9 @@ def executeQuery() -> None:
     dpg.configure_item("menuSaveFile", enabled=True)
 
 
-def preFillExample(sender, app_data, user_data) -> None:
-    dpg.set_value("serviceURL", examplesList[user_data]["serviceURL"])
-    dpg.set_value(queryTextID, examplesList[user_data]["queryText"])
-
-
-def generateExampleMenu(
-    serviceNamePrefix: str,
-    exmplst: typing.Dict[str, typing.Dict]
-) -> None:
-    for exmpl in {
-        k: v for k, v in exmplst.items()
-        if k.startswith(serviceNamePrefix)
-    }:
-        dpg.add_menu_item(
-            label=exmplst[exmpl]["description"],
-            user_data=exmpl,
-            callback=preFillExample
-        )
+def preFillExample(sender, app_data, user_data: tuple[str, str]) -> None:
+    dpg.set_value(serviceUrlID, user_data[0])
+    dpg.set_value(queryTextID, user_data[1])
 
 
 def saveResultsToPickle(sender, app_data, user_data) -> None:
@@ -601,7 +587,15 @@ def main() -> None:
                 with dpg.menu(label="Examples"):
                     for ts in tapServices:
                         with dpg.menu(label=tapServices[ts]["name"]):
-                            generateExampleMenu(f"{ts}-", examplesList)
+                            for e in tapServices[ts]["examples"]:
+                                dpg.add_menu_item(
+                                    label=e["description"],
+                                    user_data=(
+                                        tapServices[ts]["url"],
+                                        e["query"]
+                                    ),
+                                    callback=preFillExample
+                                )
                 dpg.add_spacer()
                 dpg.add_separator()
                 dpg.add_spacer()
@@ -613,7 +607,7 @@ def main() -> None:
         # -- contents
         #
         dpg.add_input_text(
-            tag="serviceURL",
+            tag=serviceUrlID,
             hint="TAP service",
             width=-1
         )
@@ -786,12 +780,12 @@ def main() -> None:
 
     # things to do on application start
     dpg.set_value(
-        "serviceURL",
-        examplesList["padc-system-planets"]["serviceURL"]
+        serviceUrlID,
+        tapServices["padc"]["url"]
     )
     dpg.set_value(
         queryTextID,
-        examplesList["padc-system-planets"]["queryText"]
+        tapServices["padc"]["examples"][5]["query"]
     )
 
     dpg.start_dearpygui()
