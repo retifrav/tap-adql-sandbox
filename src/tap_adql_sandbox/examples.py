@@ -1,3 +1,18 @@
+tapServices = {
+    "padc": {
+        "name": "PADC",
+        "url": "http://voparis-tap-planeto.obspm.fr/tap"
+    },
+    "nasa": {
+        "name": "NASA",
+        "url": "https://exoplanetarchive.ipac.caltech.edu/TAP"
+    },
+    "gaia": {
+        "name": "Gaia",
+        "url": "https://gea.esac.esa.int/tap-server/tap"
+    }
+}
+
 examplesList = {
     # ---
     # PADC
@@ -5,7 +20,7 @@ examplesList = {
     "padc-tables":
     {
         "description": "All available tables",
-        "serviceURL": "http://voparis-tap-planeto.obspm.fr/tap",
+        "serviceURL": tapServices["padc"]["url"],
         "queryText": "".join((
             "SELECT table_name, description\n"
             "FROM tap_schema.tables\n"
@@ -16,7 +31,7 @@ examplesList = {
     "padc-columns":
     {
         "description": "All available columns in the table",
-        "serviceURL": "http://voparis-tap-planeto.obspm.fr/tap",
+        "serviceURL": tapServices["padc"]["url"],
         "queryText": "".join((
             "SELECT column_name, datatype, description\n",
             "FROM tap_schema.columns\n",
@@ -27,7 +42,7 @@ examplesList = {
     "padc-stars-count":
     {
         "description": "Total number of stars",
-        "serviceURL": "http://voparis-tap-planeto.obspm.fr/tap",
+        "serviceURL": tapServices["padc"]["url"],
         "queryText": "".join((
             "SELECT COUNT(DISTINCT star_name) AS stars\n",
             "FROM exoplanet.epn_core"
@@ -36,7 +51,7 @@ examplesList = {
     "padc-planets-count":
     {
         "description": "Total number of planets",
-        "serviceURL": "http://voparis-tap-planeto.obspm.fr/tap",
+        "serviceURL": tapServices["padc"]["url"],
         "queryText": "".join((
             "SELECT COUNT(DISTINCT granule_uid) AS planets\n",
             "FROM exoplanet.epn_core"
@@ -45,7 +60,7 @@ examplesList = {
     "padc-systems-with-minumum-planets":
     {
         "description": "Systems with minimum 6 planets",
-        "serviceURL": "http://voparis-tap-planeto.obspm.fr/tap",
+        "serviceURL": tapServices["padc"]["url"],
         "queryText": "".join((
             "SELECT star_name, COUNT(*) as planets\n",
             "FROM exoplanet.epn_core\n",
@@ -58,7 +73,7 @@ examplesList = {
     "padc-system-planets":
     {
         "description": "Planets in the system",
-        "serviceURL": "http://voparis-tap-planeto.obspm.fr/tap",
+        "serviceURL": tapServices["padc"]["url"],
         "queryText": "".join((
             "SELECT star_name, granule_uid, mass, radius, period, semi_major_axis\n",
             "FROM exoplanet.epn_core\n",
@@ -69,7 +84,7 @@ examplesList = {
     "padc-system-planets-with-not-null":
     {
         "description": "Planets with known parameters",
-        "serviceURL": "http://voparis-tap-planeto.obspm.fr/tap",
+        "serviceURL": tapServices["padc"]["url"],
         "queryText": "".join((
             "SELECT star_name, granule_uid, mass, radius\n",
             "FROM exoplanet.epn_core\n",
@@ -80,7 +95,7 @@ examplesList = {
     "padc-star-highest-metallicity":
     {
         "description": "Star with highest metallicity",
-        "serviceURL": "http://voparis-tap-planeto.obspm.fr/tap",
+        "serviceURL": tapServices["padc"]["url"],
         "queryText": "".join((
             "SELECT TOP 1 star_name, star_metallicity\n",
             "FROM exoplanet.epn_core\n",
@@ -94,7 +109,7 @@ examplesList = {
     "nasa-tables":
     {
         "description": "All available tables",
-        "serviceURL": "https://exoplanetarchive.ipac.caltech.edu/TAP",
+        "serviceURL": tapServices["nasa"]["url"],
         "queryText": "".join((
             "SELECT table_name, description\n"
             "FROM tap_schema.tables\n"
@@ -105,7 +120,7 @@ examplesList = {
     "nasa-columns":
     {
         "description": "All available columns in the table",
-        "serviceURL": "https://exoplanetarchive.ipac.caltech.edu/TAP",
+        "serviceURL": tapServices["nasa"]["url"],
         "queryText": "".join((
             "SELECT column_name, datatype, description\n",
             "FROM tap_schema.columns\n",
@@ -116,7 +131,7 @@ examplesList = {
     "nasa-stars-count":
     {
         "description": "Total number of stars",
-        "serviceURL": "https://exoplanetarchive.ipac.caltech.edu/TAP",
+        "serviceURL": tapServices["nasa"]["url"],
         "queryText": "".join((
             "SELECT COUNT(DISTINCT hostname) AS stars\n",
             "FROM ps"
@@ -125,7 +140,7 @@ examplesList = {
     "nasa-planets-count":
     {
         "description": "Total number of planets",
-        "serviceURL": "https://exoplanetarchive.ipac.caltech.edu/TAP",
+        "serviceURL": tapServices["nasa"]["url"],
         "queryText": "".join((
             "SELECT COUNT(DISTINCT pl_name) AS planets\n",
             "FROM ps"
@@ -134,7 +149,7 @@ examplesList = {
     "nasa-planet-parameter":
     {
         "description": "Planet parameter by publications",
-        "serviceURL": "https://exoplanetarchive.ipac.caltech.edu/TAP",
+        "serviceURL": tapServices["nasa"]["url"],
         "queryText": "".join((
             "SELECT hostname, pl_name, pl_radj, pl_pubdate\n",
             "FROM ps\n",
@@ -145,7 +160,7 @@ examplesList = {
     "nasa-planet-parameter-partition":
     {
         "description": "Most recent value of a planets parameter",
-        "serviceURL": "https://exoplanetarchive.ipac.caltech.edu/TAP",
+        "serviceURL": tapServices["nasa"]["url"],
         "queryText": "".join((
             "SELECT * FROM\n",
             "(WITH latestEntries AS\n",
@@ -164,7 +179,7 @@ examplesList = {
     "gaia-tables":
     {
         "description": "All available tables",
-        "serviceURL": "https://gea.esac.esa.int/tap-server/tap",
+        "serviceURL": tapServices["gaia"]["url"],
         "queryText": "".join((
             "SELECT table_name\n"
             "FROM tap_schema.tables\n"
@@ -175,7 +190,7 @@ examplesList = {
     "gaia-columns":
     {
         "description": "All available columns in the table",
-        "serviceURL": "https://gea.esac.esa.int/tap-server/tap",
+        "serviceURL": tapServices["gaia"]["url"],
         "queryText": "".join((
             "SELECT column_name, datatype, description\n",
             "FROM tap_schema.columns\n",
@@ -186,7 +201,7 @@ examplesList = {
     "gaia-star-parameters":
     {
         "description": "Star parameters",
-        "serviceURL": "https://gea.esac.esa.int/tap-server/tap",
+        "serviceURL": tapServices["gaia"]["url"],
         "queryText": "".join((
             "SELECT source_id, solution_id, mass_flame, radius_flame\n",
             "FROM gaiadr3.astrophysical_parameters\n",

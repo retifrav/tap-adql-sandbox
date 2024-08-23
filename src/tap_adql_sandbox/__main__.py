@@ -29,7 +29,7 @@ from .theme import (
     styleHorizontalPadding,
     styleScrollbarWidth
 )
-from .examples import examplesList
+from .examples import tapServices, examplesList
 
 debugMode: bool = False
 noEnumerationColumn: bool = False
@@ -357,6 +357,21 @@ def preFillExample(sender, app_data, user_data) -> None:
     dpg.set_value(queryTextID, examplesList[user_data]["queryText"])
 
 
+def generateExampleMenu(
+    serviceNamePrefix: str,
+    exmplst: typing.Dict[str, typing.Dict]
+) -> None:
+    for exmpl in {
+        k: v for k, v in exmplst.items()
+        if k.startswith(serviceNamePrefix)
+    }:
+        dpg.add_menu_item(
+            label=exmplst[exmpl]["description"],
+            user_data=exmpl,
+            callback=preFillExample
+        )
+
+
 def saveResultsToPickle(sender, app_data, user_data) -> None:
     if debugMode:
         print(f"[DEBUG] {app_data}")
@@ -584,36 +599,9 @@ def main() -> None:
 
             with dpg.menu(label="Help"):
                 with dpg.menu(label="Examples"):
-                    with dpg.menu(label="PADC"):
-                        for exmpl in {
-                            k: v for k, v in examplesList.items()
-                            if k.startswith("padc-")
-                        }:
-                            dpg.add_menu_item(
-                                label=examplesList[exmpl]["description"],
-                                user_data=exmpl,
-                                callback=preFillExample
-                            )
-                    with dpg.menu(label="NASA"):
-                        for exmpl in {
-                            k: v for k, v in examplesList.items()
-                            if k.startswith("nasa-")
-                        }:
-                            dpg.add_menu_item(
-                                label=examplesList[exmpl]["description"],
-                                user_data=exmpl,
-                                callback=preFillExample
-                            )
-                    with dpg.menu(label="Gaia"):
-                        for exmpl in {
-                            k: v for k, v in examplesList.items()
-                            if k.startswith("gaia-")
-                        }:
-                            dpg.add_menu_item(
-                                label=examplesList[exmpl]["description"],
-                                user_data=exmpl,
-                                callback=preFillExample
-                            )
+                    for ts in tapServices:
+                        with dpg.menu(label=tapServices[ts]["name"]):
+                            generateExampleMenu(f"{ts}-", examplesList)
                 dpg.add_spacer()
                 dpg.add_separator()
                 dpg.add_spacer()
@@ -797,8 +785,14 @@ def main() -> None:
     dpg.set_primary_window(mainWindowID, True)
 
     # things to do on application start
-    dpg.set_value("serviceURL", examplesList["padc-system-planets"]["serviceURL"])
-    dpg.set_value(queryTextID, examplesList["padc-system-planets"]["queryText"])
+    dpg.set_value(
+        "serviceURL",
+        examplesList["padc-system-planets"]["serviceURL"]
+    )
+    dpg.set_value(
+        queryTextID,
+        examplesList["padc-system-planets"]["queryText"]
+    )
 
     dpg.start_dearpygui()
 

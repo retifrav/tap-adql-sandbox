@@ -7,6 +7,9 @@
                 ".mypy_cache",
                 "*.egg-info",
                 "__pycache__"
+            ],
+            "file_exclude_patterns": [
+                "*.sublime-project"
             ]
         }
     ]
