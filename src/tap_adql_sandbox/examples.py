@@ -203,14 +203,16 @@ tapServices: typing.Dict[str, typing.Dict] = {
             {
                 "description": "Object ID by name",
                 "query": "".join((
-                    "SELECT oid FROM basic\n",
+                    "SELECT oid\n",
+                    "FROM basic\n",
                     "WHERE main_id = 'CD-29 2360'"
                 ))
             },
             {
                 "description": "Star parameter by publications",
                 "query": "".join((
-                    "SELECT v.period, v.bibcode FROM mesVar AS v\n",
+                    "SELECT v.period, v.bibcode\n",
+                    "FROM mesVar AS v\n",
                     "JOIN basic AS b ON v.oidref = b.oid\n",
                     "WHERE b.main_id = 'CD-29 2360'\n",
                     "ORDER BY bibcode DESC"
