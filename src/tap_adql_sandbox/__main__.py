@@ -143,6 +143,53 @@ def getSimbadIDs() -> None:
                 index = 0
                 for o in oids:
                     # reveal_type(index)
+
+                    oid: Optional[str] = None
+                    # before astroquery version 0.4.8 this row was
+                    # with an upper-cased `ID` column key, but starting
+                    # with version 0.4.8 it is now lower-cased `id`
+                    #
+                    # https://github.com/astropy/astropy/issues/17695
+                    try:  # or compare `astroquery.__version__` with `0.4.7`
+                        oid = o["ID"]
+                    except KeyError:
+                        if debugMode:
+                            print(
+                                " ".join((
+                                    "[DEBUG] There is no upper-cased `ID` key",
+                                    "in this row, will try",
+                                    "with lower-cased `id` key"
+                                ))
+                            )
+                        try:
+                            oid = o["id"]
+                        except KeyError:
+                            print(
+                                " ".join((
+                                    "[ERROR] This results row has neither",
+                                    "upper-cased `ID` key nor lower-cased",
+                                    "`id` key"
+                                ))
+                            )
+                            if debugMode:
+                                if len(o.colnames) > 0:
+                                    print(
+                                        " ".join((
+                                            "[DEBUG] Here are all the other",
+                                            "keys in this row:",
+                                            ", ".join(o.colnames)
+                                        ))
+                                    )
+                                else:
+                                    print(
+                                        " ".join((
+                                            "[DEBUG] There are no other keys",
+                                            "in this row"
+                                        ))
+                                    )
+                    if oid is None:
+                        continue
+
                     with dpg.table_row():
                         with dpg.table_cell():
                             dpg.add_text(default_value=f"{index+1}")
@@ -150,7 +197,7 @@ def getSimbadIDs() -> None:
                             cellID = f"cellSimbadID-{index+1}"
                             dpg.add_text(
                                 tag=cellID,
-                                default_value=o["ID"]
+                                default_value=oid
                             )
                             dpg.bind_item_handler_registry(
                                 cellID,
