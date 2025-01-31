@@ -9,6 +9,7 @@ from typing import Optional
 #
 import sys
 import traceback
+import logging
 #
 # own stuff
 #
@@ -50,9 +51,10 @@ def getSimbadIDs() -> None:
 
     if oids:
         oidsCnt: int = len(oids)
+        logging.debug(f"IDs found in Simbad: {oidsCnt}")
         if config.debugMode:
-            print("\n[DEBUG] IDs found in Simbad:", oidsCnt)
             try:
+                # won't look nice with logging.debug(), so it's a print()
                 print(
                     tabulate(
                         oids,
@@ -62,7 +64,7 @@ def getSimbadIDs() -> None:
                     )
                 )
             except Exception as ex:
-                print(f"[WARNING] Couldn't print results. {ex}")
+                logging.warning(f"Couldn't print results. {ex}")
         try:
             with dpg.table(
                 parent="resultsGroupSimbadIDs",
@@ -96,40 +98,38 @@ def getSimbadIDs() -> None:
                     try:  # or compare `astroquery.__version__` with `0.4.7`
                         oid = o["ID"]
                     except KeyError:
-                        if config.debugMode:
-                            print(
-                                " ".join((
-                                    "[DEBUG] There is no upper-cased `ID` key",
-                                    "in this row, will try",
-                                    "with lower-cased `id` key"
-                                ))
-                            )
+                        logging.debug(
+                            " ".join((
+                                "There is no upper-cased `ID` key",
+                                "in this row, will try",
+                                "with lower-cased `id` key"
+                            ))
+                        )
                         try:
                             oid = o["id"]
                         except KeyError:
-                            print(
+                            logging.error(
                                 " ".join((
-                                    "[ERROR] This results row has neither",
+                                    "This results row has neither",
                                     "upper-cased `ID` key nor lower-cased",
                                     "`id` key"
                                 ))
                             )
-                            if config.debugMode:
-                                if len(o.colnames) > 0:
-                                    print(
-                                        " ".join((
-                                            "[DEBUG] Here are all the other",
-                                            "keys in this row:",
-                                            ", ".join(o.colnames)
-                                        ))
-                                    )
-                                else:
-                                    print(
-                                        " ".join((
-                                            "[DEBUG] There are no other keys",
-                                            "in this row"
-                                        ))
-                                    )
+                            if len(o.colnames) > 0:
+                                logging.debug(
+                                    " ".join((
+                                        "Here are all the other",
+                                        "keys in this row:",
+                                        ", ".join(o.colnames)
+                                    ))
+                                )
+                            else:
+                                logging.debug(
+                                    " ".join((
+                                        "There are no other keys",
+                                        "in this row"
+                                    ))
+                                )
                     if oid is None:
                         continue
 
@@ -150,7 +150,7 @@ def getSimbadIDs() -> None:
                         index += 1
         except Exception as ex:
             errorMsg = "Couldn't generate the results table"
-            print(f"[ERROR] {errorMsg}. {ex}", file=sys.stderr)
+            logging.error(f"{errorMsg}. {ex}")
             if config.debugMode:
                 traceback.print_exc(file=sys.stderr)
             dpg.set_value(

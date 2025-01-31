@@ -17,6 +17,7 @@ import sys
 import traceback
 import webbrowser
 from packaging.version import Version
+import logging
 import typing
 #
 # own stuff
@@ -76,20 +77,20 @@ def showLoading(isLoading: bool) -> None:
 def keyPressCallback(sender, app_data) -> None:
     global executingQuery
 
-    # print(sender, app_data)
+    # logging.debug(f"sender: {sender}, app_data: {app_data}")
+
     # dpg.is_item_focused
     if not dpg.is_item_active(queryTextID) or executingQuery:
         return
 
     if dpg.is_key_down(dpg.mvKey_R):
         # executingQuery = True
-        if config.debugMode:
-            print(
-                "".join((
-                    "[DEBUG] Triggered executing query ",
-                    "from the keyboard shortcut"
-                ))
-            )
+        logging.debug(
+            " ".join((
+                "Triggered executing query",
+                "from the keyboard shortcut"
+            ))
+        )
         executeQuery()
 
 
@@ -123,24 +124,23 @@ def executeQuery() -> None:
         showLoading(False)
         return
 
-    if config.debugMode:
-        print(f"\n[DEBUG] Query to execute:\n{queryText}")
+    logging.debug(f"Query to execute:\n{queryText}")
 
     results: pyvo.dal.DALResults = {}
     try:
         service = pyvo.dal.TAPService(serviceURL)
         results = service.search(queryText)
     except Exception as ex:
-        if config.debugMode:
-            print(f"\n[DEBUG] Query failed: {ex}")
+        logging.debug(f"Query failed: {ex}")
         dpg.set_value("errorMessage", ex)
         dpg.show_item("errorMessage")
         showLoading(False)
         return
 
+    logging.debug(f"Results found: {len(results)}")
     if config.debugMode:
-        print("\n[DEBUG] Results found:", len(results))
         try:
+            # won't look nice with logging.debug(), so it's a print()
             print(
                 tabulate(
                     results.to_table(),
@@ -150,15 +150,14 @@ def executeQuery() -> None:
                 )
             )
         except Exception as ex:
-            print(f"[WARNING] Couldn't print results. {ex}")
+            logging.warning(f"Couldn't print results. {ex}")
 
     lastQueryResults = results.to_table().to_pandas()
     rowsCount, columnsCount = lastQueryResults.shape
-    if config.debugMode:
-        print(f"[DEBUG] Columns: {columnsCount}, rows: {rowsCount}")
-    # https://github.com/retifrav/tap-adql-sandbox/issues/8
-    # https://github.com/retifrav/tap-adql-sandbox/issues/14
+    logging.debug(f"Columns: {columnsCount}, rows: {rowsCount}")
     if (
+        # https://github.com/retifrav/tap-adql-sandbox/issues/8
+        # https://github.com/retifrav/tap-adql-sandbox/issues/14
         Version(dpgVersion) < Version("2.0.0")
         and
         columnsCount > config.dpgColumnsMax
@@ -230,7 +229,7 @@ def executeQuery() -> None:
                         cellIndex += 1
     except Exception as ex:
         errorMsg = "Couldn't generate the results table"
-        print(f"[ERROR] {errorMsg}. {ex}", file=sys.stderr)
+        logging.error(f"{errorMsg}. {ex}")
         if config.debugMode:
             traceback.print_exc(file=sys.stderr)
         dpg.set_value(
@@ -251,35 +250,28 @@ def preFillExample(sender, app_data, user_data: tuple[str, str]) -> None:
 
 
 def saveResultsToPickle(sender, app_data, user_data) -> None:
-    if config.debugMode:
-        print(f"[DEBUG] {app_data}")
+    logging.debug(f"app_data: {app_data}")
     # this check might be redundant,
     # as dialog window apparently performs it on its own
     pickleFileDir: pathlib.Path = pathlib.Path(app_data["current_path"])
     if not pickleFileDir.is_dir():
-        print(
-            f"[ERROR] The {pickleFileDir} directory does not exist",
-            file=sys.stderr
-        )
+        logging.error(f"The [{pickleFileDir}] directory does not exist")
         return
     pickleFile: pathlib.Path = pickleFileDir / app_data["file_name"]
     try:
         lastQueryResults.to_pickle(pickleFile)
     except Exception as ex:
-        print(
-            f"[ERROR] Couldn't save results to {pickleFile}: {ex}",
-            file=sys.stderr
-        )
+        logging.error(f"Couldn't save results to [{pickleFile}]: {ex}")
         return
 
 
 def cellClicked(sender, app_data) -> None:
-    # print(sender, app_data)
+    # logging.debug(f"sender: {sender}, app_data: {app_data}")
 
     # mouse right click
     if app_data[0] == 1:
         cellValue = dpg.get_value(app_data[1])
-        # print(cellValue)
+        # logging.debug(f"cellValue: {cellValue}")
         dpg.set_clipboard_text(cellValue)
         dpg.set_value(app_data[1], "[copied]")
         dpg.bind_item_theme(app_data[1], getCellHighlightedTheme())
@@ -328,12 +320,26 @@ def main() -> None:
         help="floating point precision for tabulate output"
     )
     cliArgs = argParser.parse_args()
-    # print(cliArgs)
+    # logging.debug(cliArgs)
 
     config.debugMode = cliArgs.debug
     config.noEnumerationColumn = cliArgs.no_enum_column
     if cliArgs.tbl_flt_prcs:
         config.tabulateFloatfmtPrecision = cliArgs.tbl_flt_prcs
+
+    loggingLevel: int = logging.INFO
+    loggingFormat: str = "[%(levelname)s] %(message)s"
+    if config.debugMode:
+        loggingLevel = logging.DEBUG
+        # 8 is the length of "critical" - the longest log level name
+        loggingFormat = "%(asctime)s | %(levelname)-8s | %(message)s"
+    # might want to create separate loggers/handlers for errors to go
+    # to stderr, otherwise everything goes to stdout
+    logging.basicConfig(
+        format=loggingFormat,
+        level=loggingLevel,
+        stream=sys.stdout  # or set stderr here (which is the default)
+    )
 
     dpg.create_context()
 
