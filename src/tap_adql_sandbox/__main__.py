@@ -4,7 +4,6 @@ import dearpygui.dearpygui as dpg
 from dearpygui.demo import show_demo
 from dearpygui import __version__ as dpgVersion  # get_dearpygui_version()
 #
-from astroquery.simbad import Simbad
 from tabulate import tabulate
 import pathlib
 import pandas
@@ -22,7 +21,9 @@ import typing
 #
 # own stuff
 #
+from . import config
 from . import applicationPath, settingsFile
+from .simbad import simbadWindow, showSimbadIDsWindow
 from .version import __version__, __copyright__
 from .theme import (
     stylePrimaryColor,
@@ -39,25 +40,11 @@ from .theme import (
 )
 from .examples import tapServices
 
-debugMode: bool = False
-noEnumerationColumn: bool = False
-
 mainWindowID: str = "main-window"
 queryTextID: str = "query-text"
 serviceUrlID: str = "service-url"
 
 repositoryURL: str = "https://github.com/retifrav/tap-adql-sandbox"
-
-tabulateFloatfmtPrecision: str = "g"
-
-# older versions of Dear PyGui (and Dear ImGui) have a limitation of 64 columns
-# in a table:
-# - https://dearpygui.readthedocs.io/en/latest/documentation/tables.html
-# - https://github.com/ocornut/imgui/issues/2957#issuecomment-758136035
-# - https://github.com/ocornut/imgui/pull/4876
-dpgColumnsMax: int = 64
-
-windowMinWidth: int = 900
 
 lastQueryResults: pandas.DataFrame = pandas.DataFrame()
 executingQuery: bool = False
@@ -86,165 +73,6 @@ def showLoading(isLoading: bool) -> None:
         executingQuery = False
 
 
-def getSimbadIDs() -> None:
-    dpg.hide_item("resultsGroupSimbadIDs")
-    if dpg.does_item_exist("resultsTableSimbadIDs"):
-        dpg.delete_item("resultsTableSimbadIDs")
-    dpg.hide_item("errorMessageSimbadIDs")
-    dpg.set_value("errorMessageSimbadIDs", "")
-
-    dpg.hide_item("btn_getSimbadIDs")
-    dpg.show_item("loadingAnimationSimbadIDs")
-
-    idToLookUpInSimbad: str = dpg.get_value("idToLookUpInSimbad").strip()
-
-    if not idToLookUpInSimbad:
-        dpg.set_value("errorMessageSimbadIDs", "No ID provided")
-        dpg.show_item("errorMessageSimbadIDs")
-        dpg.hide_item("loadingAnimationSimbadIDs")
-        dpg.show_item("btn_getSimbadIDs")
-        return
-
-    oids = None
-    try:
-        oids = Simbad.query_objectids(idToLookUpInSimbad)
-    except Exception as ex:
-        dpg.set_value("errorMessageSimbadIDs", ex)
-        dpg.show_item("errorMessageSimbadIDs")
-        dpg.hide_item("loadingAnimationSimbadIDs")
-        dpg.show_item("btn_getSimbadIDs")
-        return
-
-    if oids:
-        oidsCnt: int = len(oids)
-        if debugMode:
-            print("\n[DEBUG] IDs found in Simbad:", oidsCnt)
-            try:
-                print(
-                    tabulate(
-                        oids,
-                        headers=oids.colnames,
-                        tablefmt="psql",
-                        floatfmt=tabulateFloatfmtPrecision
-                    )
-                )
-            except Exception as ex:
-                print(f"[WARNING] Couldn't print results. {ex}")
-        try:
-            with dpg.table(
-                parent="resultsGroupSimbadIDs",
-                tag="resultsTableSimbadIDs",
-                header_row=True,
-                resizable=True,
-                borders_outerH=True,
-                borders_innerV=True,
-                borders_innerH=True,
-                borders_outerV=True,
-                clipper=True,
-                # row_background=True,
-                # freeze_rows=0,
-                # freeze_columns=1,
-                # scrollY=True
-            ):
-                dpg.add_table_column(label="#", init_width_or_weight=0.05)
-                for header in oids.colnames:
-                    dpg.add_table_column(label=header)
-                index = 0
-                for o in oids:
-                    # reveal_type(index)
-
-                    oid: Optional[str] = None
-                    # before astroquery version 0.4.8 this row was
-                    # with an upper-cased `ID` column key, but starting
-                    # with version 0.4.8 it is now lower-cased `id`
-                    #
-                    # https://github.com/astropy/astropy/issues/17695
-                    try:  # or compare `astroquery.__version__` with `0.4.7`
-                        oid = o["ID"]
-                    except KeyError:
-                        if debugMode:
-                            print(
-                                " ".join((
-                                    "[DEBUG] There is no upper-cased `ID` key",
-                                    "in this row, will try",
-                                    "with lower-cased `id` key"
-                                ))
-                            )
-                        try:
-                            oid = o["id"]
-                        except KeyError:
-                            print(
-                                " ".join((
-                                    "[ERROR] This results row has neither",
-                                    "upper-cased `ID` key nor lower-cased",
-                                    "`id` key"
-                                ))
-                            )
-                            if debugMode:
-                                if len(o.colnames) > 0:
-                                    print(
-                                        " ".join((
-                                            "[DEBUG] Here are all the other",
-                                            "keys in this row:",
-                                            ", ".join(o.colnames)
-                                        ))
-                                    )
-                                else:
-                                    print(
-                                        " ".join((
-                                            "[DEBUG] There are no other keys",
-                                            "in this row"
-                                        ))
-                                    )
-                    if oid is None:
-                        continue
-
-                    with dpg.table_row():
-                        with dpg.table_cell():
-                            dpg.add_text(default_value=f"{index+1}")
-                        with dpg.table_cell():
-                            cellID = f"cellSimbadID-{index+1}"
-                            dpg.add_text(
-                                tag=cellID,
-                                default_value=oid
-                            )
-                            dpg.bind_item_handler_registry(
-                                cellID,
-                                "cell-handler"
-                            )
-                        index += 1
-        except Exception as ex:
-            errorMsg = "Couldn't generate the results table"
-            print(f"[ERROR] {errorMsg}. {ex}", file=sys.stderr)
-            if debugMode:
-                traceback.print_exc(file=sys.stderr)
-            dpg.set_value(
-                "errorMessageSimbadIDs",
-                f"{errorMsg}. There might be more details in console/stderr."
-            )
-            dpg.show_item("errorMessageSimbadIDs")
-            dpg.hide_item("loadingAnimationSimbadIDs")
-            dpg.show_item("btn_getSimbadIDs")
-            return
-        dpg.hide_item("loadingAnimationSimbadIDs")
-        dpg.show_item("btn_getSimbadIDs")
-        dpg.show_item("resultsGroupSimbadIDs")
-    else:
-        dpg.set_value(
-            "errorMessageSimbadIDs",
-            "Simbad doesn't have any IDs for this object"
-        )
-        dpg.show_item("errorMessageSimbadIDs")
-        dpg.hide_item("loadingAnimationSimbadIDs")
-        dpg.show_item("btn_getSimbadIDs")
-        return
-
-
-def showSimbadIDsWindow() -> None:
-    dpg.hide_item("menu_getSimbadIDs")
-    dpg.show_item("window_simbadIDs")
-
-
 def keyPressCallback(sender, app_data) -> None:
     global executingQuery
 
@@ -255,7 +83,7 @@ def keyPressCallback(sender, app_data) -> None:
 
     if dpg.is_key_down(dpg.mvKey_R):
         # executingQuery = True
-        if debugMode:
+        if config.debugMode:
             print(
                 "".join((
                     "[DEBUG] Triggered executing query ",
@@ -267,6 +95,7 @@ def keyPressCallback(sender, app_data) -> None:
 
 def executeQuery() -> None:
     global lastQueryResults
+
     # clear previously saved results
     lastQueryResults = pandas.DataFrame()
 
@@ -294,7 +123,7 @@ def executeQuery() -> None:
         showLoading(False)
         return
 
-    if debugMode:
+    if config.debugMode:
         print(f"\n[DEBUG] Query to execute:\n{queryText}")
 
     results: pyvo.dal.DALResults = {}
@@ -302,14 +131,14 @@ def executeQuery() -> None:
         service = pyvo.dal.TAPService(serviceURL)
         results = service.search(queryText)
     except Exception as ex:
-        if debugMode:
+        if config.debugMode:
             print(f"\n[DEBUG] Query failed: {ex}")
         dpg.set_value("errorMessage", ex)
         dpg.show_item("errorMessage")
         showLoading(False)
         return
 
-    if debugMode:
+    if config.debugMode:
         print("\n[DEBUG] Results found:", len(results))
         try:
             print(
@@ -317,7 +146,7 @@ def executeQuery() -> None:
                     results.to_table(),
                     headers=results.fieldnames,
                     tablefmt="psql",
-                    floatfmt=tabulateFloatfmtPrecision
+                    floatfmt=config.tabulateFloatfmtPrecision
                 )
             )
         except Exception as ex:
@@ -325,17 +154,21 @@ def executeQuery() -> None:
 
     lastQueryResults = results.to_table().to_pandas()
     rowsCount, columnsCount = lastQueryResults.shape
-    if debugMode:
+    if config.debugMode:
         print(f"[DEBUG] Columns: {columnsCount}, rows: {rowsCount}")
     # https://github.com/retifrav/tap-adql-sandbox/issues/8
     # https://github.com/retifrav/tap-adql-sandbox/issues/14
-    if Version(dpgVersion) < Version("2.0.0") and columnsCount > dpgColumnsMax:
+    if (
+        Version(dpgVersion) < Version("2.0.0")
+        and
+        columnsCount > config.dpgColumnsMax
+    ):
         dpg.set_value(
             "errorMessage",
             " ".join((
                 "You have requested too many columns in your query.",
                 f"Dear PyGui version {dpgVersion} only supports maximum",
-                f"{dpgColumnsMax} columns in a table, and so trying",
+                f"{config.dpgColumnsMax} columns in a table, and so trying",
                 "to display results for your query will crash",
                 "the application. Remove some columns from your SELECT",
                 "statement and try again."
@@ -371,7 +204,7 @@ def executeQuery() -> None:
             ),
             scrollX=addHorizontalScroll
         ):
-            if not noEnumerationColumn and rowsCount > 1:
+            if not config.noEnumerationColumn and rowsCount > 1:
                 dpg.add_table_column(label="#")
             for header in lastQueryResults.columns:
                 dpg.add_table_column(label=header)
@@ -379,10 +212,10 @@ def executeQuery() -> None:
                 # reveal_type(index)
                 index = typing.cast(int, index)
                 with dpg.table_row():
-                    if not noEnumerationColumn and rowsCount > 1:
+                    if not config.noEnumerationColumn and rowsCount > 1:
                         with dpg.table_cell():
                             dpg.add_text(default_value=f"{index+1}")
-                    cellIndex = 1
+                    cellIndex: int = 1
                     for cell in row:
                         with dpg.table_cell():
                             cellID = f"cell-{index+1}-{cellIndex}"
@@ -398,7 +231,7 @@ def executeQuery() -> None:
     except Exception as ex:
         errorMsg = "Couldn't generate the results table"
         print(f"[ERROR] {errorMsg}. {ex}", file=sys.stderr)
-        if debugMode:
+        if config.debugMode:
             traceback.print_exc(file=sys.stderr)
         dpg.set_value(
             "errorMessage",
@@ -418,7 +251,7 @@ def preFillExample(sender, app_data, user_data: tuple[str, str]) -> None:
 
 
 def saveResultsToPickle(sender, app_data, user_data) -> None:
-    if debugMode:
+    if config.debugMode:
         print(f"[DEBUG] {app_data}")
     # this check might be redundant,
     # as dialog window apparently performs it on its own
@@ -461,10 +294,6 @@ def showDPGabout() -> None:
 
 
 def main() -> None:
-    global debugMode
-    global tabulateFloatfmtPrecision
-    global noEnumerationColumn
-
     argParser = argparse.ArgumentParser(
         prog="tap-adql-sandbox",
         description=" ".join((
@@ -501,10 +330,10 @@ def main() -> None:
     cliArgs = argParser.parse_args()
     # print(cliArgs)
 
-    debugMode = cliArgs.debug
-    noEnumerationColumn = cliArgs.no_enum_column
+    config.debugMode = cliArgs.debug
+    config.noEnumerationColumn = cliArgs.no_enum_column
     if cliArgs.tbl_flt_prcs:
-        tabulateFloatfmtPrecision = cliArgs.tbl_flt_prcs
+        config.tabulateFloatfmtPrecision = cliArgs.tbl_flt_prcs
 
     dpg.create_context()
 
@@ -515,50 +344,9 @@ def main() -> None:
     dpg.set_exit_callback(callback=lambda: dpg.save_init_file(settingsFile))
 
     #
-    # --- Simbad IDs window
+    # --- Simbad window
     #
-    with dpg.window(
-        tag="window_simbadIDs",
-        label="Simbad IDs",
-        min_size=(550, 650),
-        show=False,
-        on_close=lambda: dpg.show_item("menu_getSimbadIDs")
-    ):
-        dpg.add_input_text(
-            tag="idToLookUpInSimbad",
-            hint="ID to lookup in Simbad",
-            width=-1
-        )
-        dpg.add_button(
-            tag="btn_getSimbadIDs",
-            label="Lookup",
-            callback=getSimbadIDs
-        )
-        dpg.add_loading_indicator(
-            tag="loadingAnimationSimbadIDs",
-            style=1,
-            radius=1.5,
-            # speed=2,
-            indent=7,
-            color=stylePrimaryColorActive,
-            secondary_color=stylePrimaryColor,
-            show=False
-        )
-
-        dpg.add_spacer()
-
-        dpg.add_text(
-            tag="errorMessageSimbadIDs",
-            default_value="Error",
-            # https://github.com/hoffstadt/DearPyGui/issues/1275
-            wrap=500,  # window width - 50
-            show=False
-        )
-
-        with dpg.group(tag="resultsGroupSimbadIDs", show=False):
-            dpg.add_text(default_value="Found the following IDs:")
-            with dpg.table(tag="resultsTableSimbadIDs"):
-                dpg.add_table_column(label="ResultsSimbadIDs")
+    simbadWindow()
     #
     # --- main window
     #
@@ -609,7 +397,7 @@ def main() -> None:
                     callback=showSimbadIDsWindow
                 )
 
-            if debugMode:
+            if config.debugMode:
                 with dpg.menu(label="Dev"):
                     dpg.add_menu_item(
                         label="Performance metrics",
@@ -707,7 +495,7 @@ def main() -> None:
             tag="errorMessage",
             default_value="Error",
             # https://github.com/hoffstadt/DearPyGui/issues/1275
-            wrap=windowMinWidth-50,
+            wrap=(config.windowMinWidth - 50),
             show=False
         )
 
@@ -826,11 +614,11 @@ def main() -> None:
     dpg.create_viewport(
         title="TAP ADQL sandbox",
         width=1200,
-        height=800,
-        min_width=windowMinWidth,
+        height=900,
+        min_width=config.windowMinWidth,
         min_height=600,
-        small_icon=str(applicationPath/"icons/planet-128.ico"),
-        large_icon=str(applicationPath/"icons/planet-256.ico")
+        small_icon=str(applicationPath / "icons/planet-128.ico"),
+        large_icon=str(applicationPath / "icons/planet-256.ico")
     )
 
     dpg.setup_dearpygui()
