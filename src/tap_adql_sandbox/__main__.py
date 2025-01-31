@@ -113,13 +113,13 @@ def executeQuery() -> None:
     queryText: str = dpg.get_value(queryTextID).strip()
 
     if not serviceURL:
-        dpg.set_value("errorMessage", "No service URL provided")
+        dpg.set_value("errorMessage", "No service URL provided.")
         dpg.show_item("errorMessage")
         showLoading(False)
         return
 
     if not queryText:
-        dpg.set_value("errorMessage", "Cannot execute an empty query")
+        dpg.set_value("errorMessage", "Cannot execute an empty query.")
         dpg.show_item("errorMessage")
         showLoading(False)
         return
