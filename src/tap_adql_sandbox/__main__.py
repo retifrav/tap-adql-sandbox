@@ -1,19 +1,27 @@
-# dependencies
+# 3rd-party dependencies
+#
 import dearpygui.dearpygui as dpg
 from dearpygui.demo import show_demo
+from dearpygui import __version__ as dpgVersion  # get_dearpygui_version()
+#
 from astroquery.simbad import Simbad
 from tabulate import tabulate
 import pathlib
 import pandas
 import pyvo
+#
 # standard libraries
+#
 from time import sleep
 import argparse
 import sys
 import traceback
 import webbrowser
+from packaging.version import Version
 import typing
-
+#
+# own stuff
+#
 from . import applicationPath, settingsFile
 from .version import __version__, __copyright__
 from .theme import (
@@ -42,10 +50,11 @@ repositoryURL: str = "https://github.com/retifrav/tap-adql-sandbox"
 
 tabulateFloatfmtPrecision: str = "g"
 
-# Dear PyGui (and Dear ImGui) has a limitation of 64 columns in a table
-# https://dearpygui.readthedocs.io/en/latest/documentation/tables.html
-# https://github.com/ocornut/imgui/issues/2957#issuecomment-758136035
-# https://github.com/ocornut/imgui/pull/4876
+# older versions of Dear PyGui (and Dear ImGui) have a limitation of 64 columns
+# in a table:
+# - https://dearpygui.readthedocs.io/en/latest/documentation/tables.html
+# - https://github.com/ocornut/imgui/issues/2957#issuecomment-758136035
+# - https://github.com/ocornut/imgui/pull/4876
 dpgColumnsMax: int = 64
 
 windowMinWidth: int = 900
@@ -318,15 +327,18 @@ def executeQuery() -> None:
     rowsCount, columnsCount = lastQueryResults.shape
     if debugMode:
         print(f"[DEBUG] Columns: {columnsCount}, rows: {rowsCount}")
-    if columnsCount > dpgColumnsMax:
+    # https://github.com/retifrav/tap-adql-sandbox/issues/8
+    # https://github.com/retifrav/tap-adql-sandbox/issues/14
+    if Version(dpgVersion) < Version("2.0.0") and columnsCount > dpgColumnsMax:
         dpg.set_value(
             "errorMessage",
             " ".join((
                 "You have requested too many columns in your query.",
-                f"Dear PyGui only supports maximum {dpgColumnsMax} columns",
-                "in a table, and so trying to display results for your query",
-                "will crash the application. Remove some columns from your",
-                "SELECT statement and try again."
+                f"Dear PyGui version {dpgVersion} only supports maximum",
+                f"{dpgColumnsMax} columns in a table, and so trying",
+                "to display results for your query will crash",
+                "the application. Remove some columns from your SELECT",
+                "statement and try again."
             ))
         )
         dpg.show_item("errorMessage")

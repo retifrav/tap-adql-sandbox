@@ -11,7 +11,6 @@
 - [Platforms](#platforms)
 - [Known problems](#known-problems)
     - [Application tries to connect to remote hosts on startup and sometimes crashes](#application-tries-to-connect-to-remote-hosts-on-startup-and-sometimes-crashes)
-    - [Application crashes when query has too many columns](#application-crashes-when-query-has-too-many-columns)
     - [Queries might fail with UnicodeDecodeError](#queries-might-fail-with-unicodedecodeerror)
 - [3rd-party](#3rd-party)
     - [Dependencies](#dependencies)
@@ -94,10 +93,6 @@ $ pip install astropy -U
 ```
 
 I had this problem with Astropy v4.2, and it was gone after updating to Astropy v5.1. Or perhaps the problem isn't really gone, but the new package version just came with updated data, so for now there is no need for updating.
-
-### Application crashes when query has too many columns
-
-If your query/request has a lot of columns in `SELECT`, the results table [might not have](https://github.com/retifrav/tap-adql-sandbox/issues/8) visible contents, or the application [might just crash](https://github.com/retifrav/tap-adql-sandbox/issues/14).
 
 ### Queries might fail with UnicodeDecodeError
 
