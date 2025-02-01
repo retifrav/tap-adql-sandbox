@@ -66,8 +66,8 @@ def getSimbadIDs() -> None:
             except Exception as ex:
                 logging.warning(f"Couldn't print results. {ex}")
 
-        # before astroquery version 0.4.8 this row was
-        # with an upper-cased `ID` column key, but starting
+        # before astroquery version 0.4.8 this table had
+        # an upper-cased `ID` column key, but starting
         # with version 0.4.8 it is now lower-cased `id`
         #
         # https://github.com/astropy/astropy/issues/17695
@@ -81,7 +81,7 @@ def getSimbadIDs() -> None:
                     "with lower-cased [id] key"
                 ))
             )
-            idColumnKey = "id"
+            idColumnKey = idColumnKey.lower()  # "id"
             if idColumnKey not in oids.colnames:
                 errorMsg = "Resulting table has neither [ID] nor [id] column"
                 logging.error(errorMsg)
