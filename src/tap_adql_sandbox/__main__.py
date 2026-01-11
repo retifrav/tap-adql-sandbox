@@ -35,9 +35,7 @@ from .theme import (
     getWindowTheme,
     getCellHighlightedTheme,
     getCellDefaultTheme,
-    getHyperlinkTheme,
-    styleHorizontalPadding,
-    styleScrollbarWidth
+    getHyperlinkTheme
 )
 from .examples import tapServices
 
@@ -598,7 +596,7 @@ def main() -> None:
     # dpg.bind_item_theme("errorDialogText", getErrorTheme())
 
     # mouse clicks handler for results table cells
-    with dpg.item_handler_registry(tag="cell-handler") as handler:
+    with dpg.item_handler_registry(tag="cell-handler"):  # as handler
         dpg.add_item_clicked_handler(callback=cellClicked)
 
     # keyboard shortcuts

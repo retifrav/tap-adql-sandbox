@@ -3,7 +3,6 @@
 import dearpygui.dearpygui as dpg
 from astroquery.simbad import Simbad
 from tabulate import tabulate
-from typing import Optional
 #
 # standard libraries
 #
