@@ -8,15 +8,22 @@ import traceback
 #
 import dearpygui.dearpygui as dpg
 from astroquery.simbad import Simbad
+from astroquery.simbad import conf as simbadConf
 from tabulate import tabulate
 
 # own stuff
 #
 from . import config
+from .mirrors import tryMirrors
 from .scaling import scaled
 from .theme import stylePrimaryColor, stylePrimaryColorActive
 
 logger: logging.Logger = logging.getLogger(__name__)
+
+
+def querySimbadIDs(server: str, objectID: str):
+    Simbad.server = server
+    return Simbad.query_objectids(objectID)
 
 
 def getSimbadIDs() -> None:
@@ -40,7 +47,16 @@ def getSimbadIDs() -> None:
 
     oids = None
     try:
-        oids = Simbad.query_objectids(idToLookUpInSimbad)
+        # the configured server (CDS by default) first, then the mirrors
+        # that astroquery knows about, only these names pass the validation
+        # in the `Simbad.server` setter
+        simbadServers: list[str] = [simbadConf.server] + [
+            s for s in simbadConf.servers_list if s != simbadConf.server
+        ]
+        oids = tryMirrors(
+            simbadServers,
+            lambda server: querySimbadIDs(server, idToLookUpInSimbad)
+        )
     except Exception as ex:
         dpg.set_value("errorMessageSimbadIDs", ex)
         dpg.show_item("errorMessageSimbadIDs")

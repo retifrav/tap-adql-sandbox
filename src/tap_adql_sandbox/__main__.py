@@ -21,6 +21,7 @@ from tabulate import tabulate
 #
 from . import applicationPath, config, settingsFile
 from .examples import tapServices
+from .mirrors import getTapServiceMirrors, tryMirrors
 from .scaling import getContentScale, scaled
 from .simbad import showSimbadIDsWindow, simbadWindow
 from .theme import (
@@ -123,8 +124,10 @@ def executeQuery() -> None:
 
     results: pyvo.dal.DALResults = {}
     try:
-        service = pyvo.dal.TAPService(serviceURL)
-        results = service.search(queryText)
+        results = tryMirrors(
+            [serviceURL] + getTapServiceMirrors(serviceURL),
+            lambda url: pyvo.dal.TAPService(url).search(queryText)
+        )
     except Exception as ex:
         logger.debug(f"Query failed: {ex}")
         dpg.set_value("errorMessage", ex)

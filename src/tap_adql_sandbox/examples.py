@@ -177,7 +177,14 @@ tapServices: dict[str, dict] = {
     "simbad":
     {
         "name": "SIMBAD",
-        "url": "http://simbad.cds.unistra.fr/simbad/sim-tap/sync",
+        "url": "https://simbad.cds.unistra.fr/simbad/sim-tap",
+        # tried in this order when the main server is unavailable,
+        # as it has been since late October 2026
+        "mirrors":
+        [
+            "https://simbad.cfa.harvard.edu/simbad/sim-tap",
+            "https://simbad.idia.ac.za/simbad/sim-tap"
+        ],
         "examples":
         [
             {

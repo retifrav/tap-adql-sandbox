@@ -13,6 +13,7 @@
     - [Installation fails on a too new Python version](#installation-fails-on-a-too-new-python-version)
     - [Application tries to connect to remote hosts on startup and sometimes crashes](#application-tries-to-connect-to-remote-hosts-on-startup-and-sometimes-crashes)
     - [Queries might fail with UnicodeDecodeError](#queries-might-fail-with-unicodedecodeerror)
+    - [SIMBAD at CDS is unavailable since October 2026](#simbad-at-cds-is-unavailable-since-october-2026)
 - [3rd-party](#3rd-party)
     - [Dependencies](#dependencies)
     - [Resources](#resources)
@@ -126,6 +127,31 @@ I had this problem with Astropy v4.2, and it was gone after updating to Astropy 
 ### Queries might fail with UnicodeDecodeError
 
 If query results from a TAP service contain non-ASCII symbols, then PyVO will raise [an exception](https://github.com/retifrav/tap-adql-sandbox/issues/19). The application won't crash, but you won't get query results either.
+
+### SIMBAD at CDS is unavailable since October 2026
+
+Since late October 2026 (*the first reports are from 28-30 October*) [CDS](https://cds.unistra.fr/) in Strasbourg has been dealing with a cybersecurity incident, and as part of that it took its servers offline, SIMBAD included. As of 2026-11-20 they are still down, and every request to `simbad.cds.unistra.fr` gets a 404 page, so queries fail with:
+
+``` sh
+DALServiceError: 404 Client Error: Not Found for url: https://simbad.cds.unistra.fr/simbad/sim-tap/sync
+```
+
+SIMBAD hasn't moved anywhere, it is just temporarily unavailable, and in the meantime CDS [suggests](https://cds.unistra.fr/) using its official mirrors:
+
+- [CfA Harvard](https://simbad.cfa.harvard.edu/simbad/), TAP service at `https://simbad.cfa.harvard.edu/simbad/sim-tap` (*contains data ingested up to 2026-10-14*);
+- [IDIA](https://simbad.idia.ac.za/) (*South Africa*), TAP service at `https://simbad.idia.ac.za/simbad/sim-tap`.
+
+So the application still tries the main SIMBAD server first every time (*in case it is back*), and if that fails, it falls back to the mirrors, printing a message about that to stdout:
+
+``` sh
+[WARNING] [https://simbad.cds.unistra.fr/simbad/sim-tap] is unavailable, falling back to [https://simbad.cfa.harvard.edu/simbad/sim-tap]. DALServiceError: 404 Client Error: Not Found for url: https://simbad.cds.unistra.fr/simbad/sim-tap/sync
+[INFO] Got results from the mirror [https://simbad.cfa.harvard.edu/simbad/sim-tap]
+```
+
+That applies to:
+
+- queries to the SIMBAD TAP service, but only when the service URL is exactly the one from the SIMBAD examples (*Help → Examples → SIMBAD*), as any other URL is used as it is. To query a particular mirror, put its URL into the service URL field;
+- the SIMBAD IDs lookup (*Tools → Lookup IDs in Simbad*), which first tries the server configured in Astroquery (*the CDS one by default*), and then the mirrors that Astroquery knows about. With Astroquery `0.4.11` that is only CfA Harvard, the IDIA mirror comes in its next release. This requires Astroquery `0.4.8` or later, older versions will just fail as before.
 
 ## 3rd-party
 
