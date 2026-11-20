@@ -2,6 +2,7 @@
 
 <!-- MarkdownTOC -->
 
+- [2026.11.20](#20261120)
 - [0.8.2](#082)
 - [0.8.1](#081)
 - [0.8.0](#080)
@@ -17,6 +18,17 @@
 - [0.1.0](#010)
 
 <!-- /MarkdownTOC -->
+
+## 2026.11.20
+
+- switched to date-based versioning
+- the application now requires Dear PyGui `2.3` or later and Python `3.12` or later
+    + so no more Mac OS on Intel-based Macs, unfortunately (*Dear PyGui wheels for that platform stopped at `2.1.1`*)
+        - but you can still use previous release [0.8.2](https://pypi.org/project/tap-adql-sandbox/0.8.2/)
+- no more limit of maximum 64 columns in results table, now it is 511 including the enumeration column, which is a Dear ImGui limitation (*[#8](https://github.com/retifrav/tap-adql-sandbox/issues/8), [#14](https://github.com/retifrav/tap-adql-sandbox/issues/14)*)
+- fallback for SIMBAD mirrors (*CfA Harvard, IDIA*) for when SIMBAD at CDS is unavailable (*as it has been since [October 2026](https://github.com/retifrav/tap-adql-sandbox/tree/2ec7e959e667a456402e58ba785f23873f0592bf#simbad-at-cds-is-unavailable-since-october-2026)*)
+- scaling UI by the display content scale on GNU/Linux
+    + and in general a new option `--ui-scale` for setting the scaling factor explicitly
 
 ## 0.8.2
 

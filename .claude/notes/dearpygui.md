@@ -36,7 +36,7 @@ Evidence behind the Dear PyGui rules in `CLAUDE.md`, gathered on 2026-11-20 from
 - So the raw codes the app used to register (341, 343, 345, 347 and 17) can't work on 2.x. The app doesn't abort on the first frame, which suggests the assert is compiled out, so those reads land outside the array.
 - `is_key_down` calls `ImGui::IsKeyDown(key)`, and `GetKeyData` maps `ImGuiMod_*` flags to their keys, so modifier constants are valid arguments.
 - Dear ImGui's changelog for 1.90.7 says: "on macOS X, Cmd and Ctrl keys are now automatically swapped by io.AddKeyEvent()". In 1.92.5, `io.ConfigMacOSXBehaviors` defaults to true under `__APPLE__`. Every 2.x release bundles ImGui ≥ 1.91.0.
-- Not verified here (no display): that Cmd+R actually triggers on the user's Mac.
+- Verified by the user on their Mac on 2026-11-20: Cmd+R triggers the query. It can't be checked in the container, which has no macOS.
 
 ## Tables
 

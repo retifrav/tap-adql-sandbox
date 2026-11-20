@@ -30,8 +30,19 @@ Evidence behind the Commands rules in `CLAUDE.md`. Measured in the arm64 (macOS 
 
 ## Build and run
 
-- `uv build --out-dir <dir>` → `tap_adql_sandbox-0.8.2.tar.gz` and `tap_adql_sandbox-0.8.2-py3-none-any.whl`. The wheel has 16 entries, including `fonts/JetBrainsMono-Thin.ttf` and both `.ico` files. `uv build` leaves no `build/` directory in the tree.
+- `uv build --out-dir <dir>` → `tap_adql_sandbox-0.8.2.tar.gz` and `tap_adql_sandbox-0.8.2-py3-none-any.whl`. The wheel has 16 entries, including `fonts/JetBrainsMono-Thin.ttf` and both `.ico` files. `uv build` leaves no `build/` directory in the tree. That holds only for the default sdist-then-wheel build: `uv build --wheel` builds straight from the tree and does leave `build/` there (seen 2026-11-20), so delete it afterwards.
 - The sdist contains only `LICENSE`, `MANIFEST.in`, `PKG-INFO`, `README.md`, `pyproject.toml`, `setup.cfg`, `setup.py` and `src/`. `changelog.md`, `CLAUDE.md` and `.claude/` don't ship.
 - `uv run --isolated --no-project --with <wheel> tap-adql-sandbox --version` installed 35 packages (Dear PyGui ships an aarch64 Linux wheel) and printed `tap-adql-sandbox 0.8.2`.
 - `uv run --isolated --no-project --with . tap-adql-sandbox --help` works too, but it created an in-tree `build/` (`build/lib`, `build/bdist.linux-aarch64`) that had to be deleted by hand.
 - No `DISPLAY` is set in the container, and the GUI was not launched.
+
+## License metadata
+
+Measured on 2026-11-20 in the x86_64 (Arch host) container.
+
+- With `setuptools>=42` in `[build-system]` and the `License :: OSI Approved :: GNU General Public License v3 (GPLv3)` classifier, `uv build` resolved setuptools 84.2.1, which printed `SetuptoolsDeprecationWarning: License classifiers are deprecated` (from `_finalize_license_expression` in `setuptools/dist.py`). `python -m build` prints the same warning. The wheel was Metadata-Version 2.4 already, with `License-File: LICENSE` and no license expression.
+- With `license_expression = GPL-3.0-or-later` in `setup.cfg`'s `[metadata]` and the classifier removed, the warning is gone. The wheel's `METADATA` and the sdist's `PKG-INFO` both carry `License-Expression: GPL-3.0-or-later`, `License-File: LICENSE` and `Dynamic: license-expression`, and `LICENSE` lands in `dist-info/licenses/`. setuptools 77.0.3 (via `--build-constraint`) gives the same metadata. setuptools adds `LICENSE` through its default `license_files` globs, so no `license_files` key is needed.
+- Keeping the classifier next to the expression fails the build: `InvalidConfigError: License classifiers have been superseded by license expressions`.
+- `"wheel"` was dropped from `[build-system] requires` along with the floor bump, because setuptools has shipped `bdist_wheel` itself since 70.1. The build works without it.
+- The expression was first `GPL-3.0-only`, a literal mapping of the `GPLv3` classifier (the trove list has a separate `GPLv3+` one), and the user changed it to `GPL-3.0-or-later` the same day. Both values were built with setuptools 84.2.1 and 77.0.3 and came out unchanged (no normalization message). The expression is the only place that says "or later": `LICENSE` is the plain GPLv3 text, the README doesn't mention the license, and the About window says `License: GPLv3`.
+- Uploading needs Metadata 2.4 support on the client side, which twine has had since 6.1.0. The wheel was 2.4 before this change, so nothing new there.
