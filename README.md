@@ -62,16 +62,15 @@ $ tap-adql-sandbox --help
 
 ## Platforms
 
-Tested on:
+Tested on all the major desktop operating systems (*Mac OS, Windows, GNU/Linux*), but latest versions of the application require Dear PyGui `2.3` or later, which is published only for these platforms:
 
-- Mac OS:
-    + 11.6.4, Intel
-    + 12.2.1, Apple silicon
-- Windows:
-    + 10
-    + 11
-- GNU/Linux:
-    + Ubuntu 20.04
+- Mac OS 13 or newer, ARM64 (*Apple silicon*) only;
+- Windows 10/11, x64 only;
+- GNU/Linux, both x64 and ARM64.
+
+which unfortunately applies the same restriction on the application itself.
+
+Previous releases also supported x64 on older Mac OS, so if you need that, then you can try installing [0.8.2](https://pypi.org/project/tap-adql-sandbox/0.8.2/) release.
 
 ## Known problems
 

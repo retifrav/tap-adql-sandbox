@@ -12,15 +12,13 @@ styleScrollbarWidth: int = 16
 
 
 def getGlobalFont():
-    with (
-        dpg.font_registry(),
-        dpg.font(
+    # since Dear PyGui 2.3 glyphs (Cyrillic ones included) are loaded on demand,
+    # so the font needs no character range hints
+    with dpg.font_registry():
+        return dpg.add_font(
             applicationPath / "fonts" / "JetBrainsMono-Thin.ttf",
             24
-        ) as globalFont
-    ):
-        dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
-        return globalFont
+        )
 
 
 def getGlobalTheme():
@@ -139,17 +137,17 @@ def getGlobalTheme():
                 category=dpg.mvThemeCat_Core
             )
             dpg.add_theme_color(
-                dpg.mvThemeCol_TabActive,
+                dpg.mvThemeCol_TabSelected,
                 stylePrimaryColorActive,
                 category=dpg.mvThemeCat_Core
             )
             dpg.add_theme_color(
-                dpg.mvThemeCol_TabUnfocused,
+                dpg.mvThemeCol_TabDimmed,
                 stylePrimaryColor,
                 category=dpg.mvThemeCat_Core
             )
             dpg.add_theme_color(
-                dpg.mvThemeCol_TabUnfocusedActive,
+                dpg.mvThemeCol_TabDimmedSelected,
                 stylePrimaryColorActive,
                 category=dpg.mvThemeCat_Core
             )

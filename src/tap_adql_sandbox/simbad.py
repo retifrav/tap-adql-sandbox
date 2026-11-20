@@ -205,8 +205,7 @@ def simbadWindow():
         dpg.add_text(
             tag="errorMessageSimbadIDs",
             default_value="Error",
-            # https://github.com/hoffstadt/DearPyGui/issues/1275
-            wrap=500,  # window width - 50
+            wrap=0,  # 0 wraps the text at the window edge
             show=False
         )
 

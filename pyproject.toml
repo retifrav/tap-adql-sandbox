@@ -25,7 +25,6 @@ python-version = "3.12"
 allowed-unresolved-imports = [
     "astroquery.**",
     "dearpygui.**",
-    "packaging.**",
     "pandas.**",
     "pyvo.**",
     "setuptools.**",

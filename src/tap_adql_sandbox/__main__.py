@@ -14,9 +14,7 @@ from time import sleep
 import dearpygui.dearpygui as dpg
 import pandas
 import pyvo
-from dearpygui import __version__ as dpgVersion  # get_dearpygui_version()
 from dearpygui.demo import show_demo
-from packaging.version import Version
 from tabulate import tabulate
 
 # own stuff
@@ -79,7 +77,9 @@ def keyPressCallback(sender, app_data) -> None:
     if not dpg.is_item_active(queryTextID) or executingQuery:
         return
 
-    if dpg.is_key_down(dpg.mvKey_R):
+    # the handler fires on `R`, so check for the modifier. On Mac OS
+    # Dear ImGui reports `Cmd` as `Ctrl`, which makes it `Cmd + R` there
+    if dpg.is_key_down(dpg.mvKey_ModCtrl):
         # executingQuery = True
         logger.debug(
             "Triggered executing query "
@@ -149,20 +149,20 @@ def executeQuery() -> None:
     lastQueryResults = results.to_table().to_pandas()
     rowsCount, columnsCount = lastQueryResults.shape
     logger.debug(f"Columns: {columnsCount}, rows: {rowsCount}")
-    if (
-        # https://github.com/retifrav/tap-adql-sandbox/issues/8
-        # https://github.com/retifrav/tap-adql-sandbox/issues/14
-        Version(dpgVersion) < Version("2.0.0")
-        and
-        columnsCount > config.dpgColumnsMax
-    ):
+    addEnumerationColumn: bool = (
+        not config.noEnumerationColumn and rowsCount > 1
+    )
+    # https://github.com/retifrav/tap-adql-sandbox/issues/8
+    # https://github.com/retifrav/tap-adql-sandbox/issues/14
+    if columnsCount + int(addEnumerationColumn) > config.dpgColumnsMax:
         dpg.set_value(
             "errorMessage",
             (
                 "You have requested too many columns in your query. "
-                f"Dear PyGui version {dpgVersion} only supports maximum "
-                f"{config.dpgColumnsMax} columns in a table, and so trying "
-                "to display results for your query will crash "
+                f"A table can have maximum {config.dpgColumnsMax} columns, "
+                "including the enumeration column (which can be "
+                "disabled with --no-enum-column), and so trying "
+                "to display results for your query would crash "
                 "the application. Remove some columns from your SELECT "
                 "statement and try again."
             )
@@ -197,7 +197,7 @@ def executeQuery() -> None:
             ),
             scrollX=addHorizontalScroll
         ):
-            if not config.noEnumerationColumn and rowsCount > 1:
+            if addEnumerationColumn:
                 dpg.add_table_column(label="#")
             for header in lastQueryResults.columns:
                 dpg.add_table_column(label=header)
@@ -205,7 +205,7 @@ def executeQuery() -> None:
                 # reveal_type(index)
                 index = typing.cast(int, index)
                 with dpg.table_row():
-                    if not config.noEnumerationColumn and rowsCount > 1:
+                    if addEnumerationColumn:
                         with dpg.table_cell():
                             dpg.add_text(default_value=f"{index+1}")
                     cellIndex: int = 1
@@ -460,7 +460,8 @@ def main() -> None:
         )
         dpg.add_input_text(
             tag=queryTextID,
-            # FIXME doesn't work (yet)
+            # FIXME never shows, because Dear PyGui ignores hints
+            # in multiline inputs (it clears them before drawing)
             # https://github.com/hoffstadt/DearPyGui/issues/1519
             hint="ADQL query",
             default_value=(
@@ -494,8 +495,7 @@ def main() -> None:
         dpg.add_text(
             tag="errorMessage",
             default_value="Error",
-            # https://github.com/hoffstadt/DearPyGui/issues/1275
-            wrap=(config.windowMinWidth - 50),
+            wrap=0,  # 0 wraps the text at the window edge
             show=False
         )
 
@@ -507,7 +507,7 @@ def main() -> None:
     # --- save file dialog
     #
     with dpg.file_dialog(
-        id="dialogSaveFile",
+        tag="dialogSaveFile",
         directory_selector=False,
         width=800,
         height=600,
@@ -595,17 +595,8 @@ def main() -> None:
 
     # keyboard shortcuts
     with dpg.handler_registry():
-        # --- for the query text
-        # Mac OS | Control
-        dpg.add_key_press_handler(341, callback=keyPressCallback)
-        # Mac OS | left Command
-        dpg.add_key_press_handler(343, callback=keyPressCallback)
-        # Mac OS | right Command
-        dpg.add_key_press_handler(347, callback=keyPressCallback)
-        # Linux | right Ctrl?
-        dpg.add_key_press_handler(345, callback=keyPressCallback)
-        # Windows | left and right Ctrl
-        dpg.add_key_press_handler(17, callback=keyPressCallback)
+        # --- Cmd/Ctrl + R for the query text, the callback checks for the modifier
+        dpg.add_key_press_handler(dpg.mvKey_R, callback=keyPressCallback)
 
     # ---
 

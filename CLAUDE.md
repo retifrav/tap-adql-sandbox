@@ -30,10 +30,18 @@ A desktop GUI ([Dear PyGui](https://pypi.org/project/dearpygui/)) for running AD
 
   Every early `return` must restore the button and indicator state: `showLoading(False)` in the main window, a manual hide/show pair in `simbad.py`.
 - `config` is mutable module state, overwritten from the CLI arguments in `main()` after import. Always use `from . import config` and read `config.debugMode` at call time. `from .config import debugMode` would freeze the default.
-- The query path is `pyvo.dal.TAPService(url).search(query)` → `results.to_table().to_pandas()`. The result goes into the module global `lastQueryResults`, which is what "Save results to pickle" writes. With Dear PyGui < 2.0 a guard refuses to render more than `config.dpgColumnsMax` (64) columns, because older Dear PyGui crashes on them (issues #8, #14). The version comparison uses `packaging`, which is imported but not listed in `install_requires`: it only arrives transitively.
+- The query path is `pyvo.dal.TAPService(url).search(query)` → `results.to_table().to_pandas()`. The result goes into the module global `lastQueryResults`, which is what "Save results to pickle" writes. A guard refuses to render a result whose column count plus the `#` enumeration column (shown unless `--no-enum-column` or a single row, `addEnumerationColumn`) exceeds `config.dpgColumnsMax` (511), because Dear ImGui asserts `columns_count < IMGUI_TABLE_MAX_COLUMNS` (512) in `BeginTable` (issues #8, #14 were the 64-column limit of Dear PyGui 1.x).
 - The SIMBAD lookup uses `Simbad.query_objectids`. The ID column is `ID` before astroquery 0.4.8 and `id` from 0.4.8 on, and both cases are handled deliberately.
 - `examples.py` holds `tapServices`: service key → `name`, `url` and `examples` (a list of `{description, query}`). The Help → Examples submenus are generated from it in insertion order. The query prefilled at startup is picked **by position**, `tapServices["padc"]["examples"][5]`, so inserting or reordering PADC examples silently changes it.
 - Fonts and icons are loaded relative to `applicationPath`, and they reach the wheel only through the `graft` lines in `MANIFEST.in` plus `include_package_data=True` in `setup.py`. A new resource directory needs its own `MANIFEST.in` line.
+- Dear PyGui `>= 2.3` is required (`install_requires`), so there are no Dear PyGui version branches. **Before changing that minimum or the key handling, read `.claude/notes/dearpygui.md`**, which has the evidence behind these rules:
+  - Key handling: use `dpg.mvKey_*` constants, never raw key numbers. Since 2.0 they are Dear ImGui `ImGuiKey` values (named keys start at 512), and Dear ImGui rejects anything else. `mvKey_LWin`/`mvKey_RWin` still hold 1.x values and are just as invalid. For modifiers, use `mvKey_ModCtrl`/`mvKey_ModSuper`/`mvKey_ModShift`/`mvKey_ModAlt`. On macOS Dear ImGui swaps Ctrl and Cmd, so there `mvKey_ModCtrl` is Cmd and `mvKey_ModSuper` is the physical Ctrl key.
+  - The Cmd/Ctrl + R shortcut: a single key-press handler on `mvKey_R`, with `keyPressCallback` checking `dpg.is_key_down(dpg.mvKey_ModCtrl)`. Dear ImGui reports Cmd as Ctrl on macOS, so that one check is Cmd + R there and Ctrl + R elsewhere.
+  - Pass `tag=`, never `id=`, which warns `id keyword renamed to tag`.
+  - Don't add font range hints. Glyphs load on demand since 2.3, `add_font_range_hint` is a no-op, and its deprecation decorator rewrites the process-wide `warnings` filters.
+  - `hint` does nothing on multiline inputs (Dear PyGui clears it).
+  - `wrap=0` on a text wraps at the window edge.
+  - Lowering the minimum would bring back version branches for all of the above, and Intel Macs would need one, since macOS x86_64 wheels stop at 2.1.1. Ask first.
 - On exit Dear PyGui saves window layout to `settings.ini` inside the package directory (`settingsFile`, wired up through `init_file`). The file is gitignored.
 - `--debug` turns on several things:
   - DEBUG logging with timestamps (all logging goes to stdout). Modules log through their own `logger: logging.Logger = logging.getLogger(__name__)`, never through `logging.debug()` and friends (ruff `LOG015`). The `logging.basicConfig` call in `main()` configures the root logger they propagate to, and its format has no `%(name)s`.
@@ -41,7 +49,12 @@ A desktop GUI ([Dear PyGui](https://pypi.org/project/dearpygui/)) for running AD
   - Tracebacks to stderr.
   - A Dev menu.
   - A prefilled SIMBAD input.
-- The README's "Known problems" section covers two dependency-side issues: astropy contacts remote hosts at startup, and PyVO raises `UnicodeDecodeError` on non-ASCII results (#19).
+- The README's "Known problems" section covers three dependency-side issues:
+  - Installation fails on a Python version too new for Dear PyGui's wheels. It ships no sdist, and on 2026-11-20 its wheels stopped at 3.14.
+  - astropy contacts remote hosts at startup.
+  - PyVO raises `UnicodeDecodeError` on non-ASCII results (#19).
+
+  Its Platforms section says which platforms Dear PyGui 2.3 has wheels for.
 
 ## Conventions
 
