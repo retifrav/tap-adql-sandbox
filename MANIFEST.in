@@ -1,2 +1,3 @@
 graft src/tap_adql_sandbox/fonts
 graft src/tap_adql_sandbox/icons
+global-exclude .DS_Store Thumbs.db desktop.ini
