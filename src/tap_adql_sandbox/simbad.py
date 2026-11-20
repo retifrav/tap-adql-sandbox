@@ -13,6 +13,7 @@ from tabulate import tabulate
 # own stuff
 #
 from . import config
+from .scaling import scaled
 from .theme import stylePrimaryColor, stylePrimaryColorActive
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -174,7 +175,7 @@ def simbadWindow():
     with dpg.window(
         tag="window_simbadIDs",
         label="Simbad IDs",
-        min_size=(550, 700),
+        min_size=(scaled(550), scaled(700)),
         show=False,
         on_close=lambda: dpg.show_item("menu_getSimbadIDs")
     ):
@@ -194,7 +195,7 @@ def simbadWindow():
             style=1,
             radius=1.5,
             # speed=2,
-            indent=7,
+            indent=scaled(7),
             color=stylePrimaryColorActive,
             secondary_color=stylePrimaryColor,
             show=False

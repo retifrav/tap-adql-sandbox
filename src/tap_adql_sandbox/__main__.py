@@ -21,6 +21,7 @@ from tabulate import tabulate
 #
 from . import applicationPath, config, settingsFile
 from .examples import tapServices
+from .scaling import getContentScale, scaled
 from .simbad import showSimbadIDsWindow, simbadWindow
 from .theme import (
     getCellDefaultTheme,
@@ -174,7 +175,7 @@ def executeQuery() -> None:
         # when there isn't that many columns,
         # squeezed table doesn't look nice
         addHorizontalScroll = (
-            dpg.get_item_width(mainWindowID) / columnsCount < 150
+            dpg.get_item_width(mainWindowID) / columnsCount < scaled(150)
         )
         with dpg.table(
             parent="resultsGroup",
@@ -313,7 +314,25 @@ def main() -> None:
         metavar=".8f",
         help="floating point precision for tabulate output"
     )
+    argParser.add_argument(
+        "--ui-scale",
+        metavar="FACTOR",
+        type=float,
+        help=(
+            "scale fonts, controls and windows by this factor, "
+            f"from {config.uiScaleMin} to {config.uiScaleMax} "
+            "(default: Xft.dpi / 96 on GNU/Linux, 1 on other platforms)"
+        )
+    )
     cliArgs = argParser.parse_args()
+    if (
+        cliArgs.ui_scale is not None
+        and not config.uiScaleMin <= cliArgs.ui_scale <= config.uiScaleMax
+    ):
+        argParser.error(
+            "--ui-scale has to be "
+            f"from {config.uiScaleMin} to {config.uiScaleMax}"
+        )
     # logger.debug(cliArgs)
 
     config.debugMode = cliArgs.debug
@@ -334,6 +353,14 @@ def main() -> None:
         level=loggingLevel,
         stream=sys.stdout  # or set stderr here (which is the default)
     )
+
+    # before any UI is created, because every size depends on it
+    config.uiScale = (
+        cliArgs.ui_scale
+        if cliArgs.ui_scale is not None
+        else getContentScale()
+    )
+    logger.debug(f"UI scale: {config.uiScale}")
 
     dpg.create_context()
 
@@ -470,7 +497,7 @@ def main() -> None:
                 "WHERE some_thing = 1"
             ),
             width=-1,
-            height=300,
+            height=scaled(300),
             multiline=True,
             tab_input=True
         )
@@ -484,7 +511,7 @@ def main() -> None:
             style=1,
             radius=2.0,
             # speed=2,
-            indent=7,
+            indent=scaled(7),
             color=stylePrimaryColorActive,
             secondary_color=stylePrimaryColor,
             show=False
@@ -509,8 +536,8 @@ def main() -> None:
     with dpg.file_dialog(
         tag="dialogSaveFile",
         directory_selector=False,
-        width=800,
-        height=600,
+        width=scaled(800),
+        height=scaled(600),
         modal=True,
         show=False,
         callback=saveResultsToPickle
@@ -542,7 +569,7 @@ def main() -> None:
         tag="aboutWindow",
         label="About application",
         modal=True,
-        min_size=(780, 440),
+        min_size=(scaled(780), scaled(440)),
         show=False
     ):
         dpg.add_text(
@@ -564,21 +591,21 @@ def main() -> None:
 
         dpg.add_spacer()
         dpg.add_separator()
-        dpg.add_spacer(height=5)
+        dpg.add_spacer(height=scaled(5))
         with dpg.group(horizontal=True):
             dpg.add_text("Created with Dear PyGui")
             dpg.add_button(
                 label="about that...",
                 callback=showDPGabout
             )
-        dpg.add_spacer(height=5)
+        dpg.add_spacer(height=scaled(5))
         dpg.add_separator()
-        dpg.add_spacer(height=10)
+        dpg.add_spacer(height=scaled(10))
         dpg.add_button(
             label="Close",
             callback=lambda: dpg.hide_item("aboutWindow")
         )
-        dpg.add_spacer(height=2)
+        dpg.add_spacer(height=scaled(2))
 
     # themes/styles bindings
     dpg.bind_font(getGlobalFont())
@@ -602,10 +629,10 @@ def main() -> None:
 
     dpg.create_viewport(
         title="TAP ADQL sandbox",
-        width=1200,
-        height=900,
-        min_width=config.windowMinWidth,
-        min_height=600,
+        width=scaled(1200),
+        height=scaled(900),
+        min_width=scaled(config.windowMinWidth),
+        min_height=scaled(600),
         small_icon=str(applicationPath / "icons/planet-128.ico"),
         large_icon=str(applicationPath / "icons/planet-256.ico")
     )

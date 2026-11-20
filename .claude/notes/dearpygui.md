@@ -54,3 +54,77 @@ Evidence behind the Dear PyGui rules in `CLAUDE.md`, gathered on 2026-11-20 from
 - `main()` builds the whole UI without a display if `dpg.create_viewport` is patched to raise. All items, handler registries, the font and the themes then exist and can be inspected with `get_item_configuration`, and `executeQuery()` can be driven with a fake `pyvo.dal.TAPService` whose `search()` returns an object with `__len__` and `to_table().to_pandas()`.
 - On 2.3.0 and 2.3.1 the current tree gives no warnings (recorded with `simplefilter("always")`), both error texts have `wrap == 0`, `dialogSaveFile` exists, and there is exactly one key-press handler, with `key == mvKey_R`.
 - `HEAD` before this change fails those checks: both deprecation warnings, five raw-code handlers, fixed wrap widths.
+
+## HiDPI
+
+Gathered on 2026-11-20 from the v2.3.1 sources, the `cp313` `manylinux1_x86_64` wheel, Dear ImGui at the bundled commit `3912b3d` (1.92.5), and Xvfb runs in the x86_64 container on the Arch host. It was not verified on the user's real 4K Arch desktop, and the session type there (X11, or Wayland with XWayland) is unknown.
+
+### What Dear PyGui does
+
+- Linux (`src/mvViewport_linux.cpp`): the GLFW window is created at the requested size in physical pixels, and no scale-related hint is set. Nothing in `src/` calls `glfwGet*ContentScale` or `ScaleAllSizes`, and nothing sets `FontScaleDpi`. Hence the tiny UI on a 4K display. Upstream issue #1081 ("Support High DPI") has been open since 2021.
+- The only scale Dear PyGui has is `set_global_font_scale`, which `Render()` (`src/mvContext.cpp`) copies into `style.FontScaleMain` every frame.
+- macOS (`src/mvViewport_apple.mm`): `glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE)`, so the framebuffer is in points and macOS upscales it. That's why the size is right on a Retina Mac. GLFW reports a content scale of 2 there, so the app must not apply it on macOS.
+- Windows (`src/mvViewport_win32.cpp`): there is no DPI-awareness call, so presumably Windows bitmap-scales the window (the right size, but blurry). Not checked on a Windows host.
+- The bundled GLFW's `glfwGetVersionString()` reports `3.3.7 X11 GLX EGL OSMesa clock_gettime evdev`. It is X11 only, with no Wayland backend, so on a Wayland session it runs through XWayland. What it then sees depends on how the compositor scales XWayland clients.
+- `_dearpygui.so` exports 133 `glfw*` symbols (`nm -D --defined-only`), including `glfwInit`, `glfwTerminate`, `glfwGetPrimaryMonitor` and `glfwGetMonitorContentScale`. GLFW is linked statically, and only `libX11.so.6` appears in `ldd`. The aarch64 and macOS wheels were not checked.
+
+### Dear ImGui's recipe
+
+- In 1.92.5, `examples/example_glfw_opengl3/main.cpp` computes `main_scale = ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor())`, creates the window at `1280 * main_scale` by `800 * main_scale`, then calls `style.ScaleAllSizes(main_scale)` and sets `style.FontScaleDpi = main_scale`.
+- `ImGui_ImplGlfw_GetContentScaleForMonitor` returns 1 on Apple, Emscripten, Android and Wayland, and `glfwGetMonitorContentScale()` everywhere else.
+- In GLFW 3.3 on X11 that value is `Xft.dpi / 96`, read from the root window's `RESOURCE_MANAGER` with `XrmGetResource("Xft.dpi", "Xft.Dpi")`. It is the same for every monitor, and an unset `Xft.dpi` counts as 96.
+
+### What the app does
+
+- `getContentScale()` follows that recipe on Linux, through `ctypes.CDLL(_dearpygui.__file__)`. Dear PyGui calls `glfwInit()` only in `show_viewport()`, so the app runs `glfwInit` → `glfwGetPrimaryMonitor` → `glfwGetMonitorContentScale` → `glfwTerminate` before any of that.
+- Measured under Xvfb:
+
+  | `RESOURCE_MANAGER` | scale |
+  |---|---|
+  | `Xft.dpi: 192` | 2.0 |
+  | `Xft.dpi: 144` | 1.5 |
+  | `*dpi: 120` | 1.25 (the wildcard matches) |
+  | unset | 1.0 |
+  | `Xft.dpi: 0` | 0.0, which is why the range check exists |
+
+  A second `glfwInit` after `glfwTerminate` works. Without a display `glfwInit` returns 0.
+- `ScaleAllSizes` in 1.92.5 scales about 35 fields. The theme sets these through `scaled()`:
+  - `WindowPadding`, `FramePadding`, `ItemSpacing`, `ItemInnerSpacing`, `GrabMinSize` and `ScrollbarSize`.
+  - The rounding values, which are 0.
+  - `CellPadding`, added only to be scaled, at Dear ImGui's default (4, 2). Dear PyGui doesn't change Dear ImGui's default style sizes.
+
+  The rest stay at their unscaled defaults (`IndentSpacing` 21, `WindowMinSize` 32, `SeparatorTextPadding`, the tab sizes and so on), and nothing in this UI visibly uses them. Border sizes aren't scaled by Dear ImGui either.
+- The font is scaled through the size passed to `add_font`, so `get_global_font_scale()` stays 1.0 (measured). Dear ImGui 1.92 rasterizes glyphs at the final size, and at 2× the text is sharp.
+- Results:
+  - Scale 1 (`Xft.dpi` unset, or `--ui-scale 1`): the main-window and SIMBAD-window frames are byte-identical to the frames from before the change.
+  - `Xft.dpi: 192`: a 2400×1800 viewport. The main window, the SIMBAD window, a results table and the About window all keep the 1× proportions.
+  - `Xft.dpi: 144`: 1800×1350.
+  - `--ui-scale 1.25`: 1500×1125.
+  - `--ui-scale 0`, `nan` and `5` are refused by the range check, and `abc` by argparse.
+- Window sizes saved in `settings.ini` are physical pixels from whatever scale the previous run used. Not checked: what a saved size below the newly scaled `min_size` looks like.
+
+### Risks to recheck on a Dear PyGui bump
+
+- If Dear PyGui adds its own Linux DPI handling, or bundles a GLFW 3.4+ with Wayland (where the content scale is the output scale and sizes are already logical), the app would scale twice. Check `glfwGetVersionString()` and `mvViewport_linux.cpp` first.
+- Some setups scale XWayland clients in the compositor while also advertising an `Xft.dpi` above 96. They get double scaling, and `--ui-scale 1` is the way out.
+
+### Running the GUI on Xvfb
+
+- Start the server with `Xvfb :99 -screen 0 3840x2160x24 -nolisten tcp -noreset`, run in the background, and kill it by PID afterwards. **`-noreset` is required**: without it the server resets when its last client disconnects, which drops `RESOURCE_MANAGER`. A property set by one process is then gone for the next, and every probe reads 1.0.
+- The image has no `xrdb`, so set the property through libX11 with `ctypes`:
+
+  ```python
+  x = ctypes.CDLL("libX11.so.6")
+  # set restype/argtypes: XOpenDisplay -> c_void_p, XDefaultRootWindow/XInternAtom -> c_ulong
+  d = x.XOpenDisplay(None)
+  atom = x.XInternAtom(d, b"RESOURCE_MANAGER", 0)
+  x.XChangeProperty(d, x.XDefaultRootWindow(d), atom, 31, 8, 0, data, len(data))  # XA_STRING, format 8, PropModeReplace
+  x.XCloseDisplay(d)
+  ```
+
+  `XDeleteProperty` removes the property again, and `XResourceManagerString` reads it back.
+- The harness:
+  - Wrap `dpg.setup_dearpygui` (`main()` looks it up at call time) to add `dpg.set_frame_callback(N, …)` calls. These save frames with `dpg.output_frame_buffer(file=…png)`, show windows with `dpg.show_item("window_simbadIDs")` and so on, and end with `dpg.stop_dearpygui()`.
+  - Point `tap_adql_sandbox.__main__.settingsFile` outside the tree, because the tree has a real, gitignored `settings.ini`.
+  - Replace `pyvo.dal.TAPService` with a fake whose `search()` returns an object with `__len__` and `to_table().to_pandas()`. Calling `app.executeQuery()` from a frame callback then fills a results table without any network access.
+- Mesa renders GLX in Xvfb without complaint. The venv was `uv venv --python /usr/bin/python3` plus the Dear PyGui wheel, `pyvo`, `astroquery`, `pandas` and `tabulate`, and the app ran from `PYTHONPATH=/workspace/src`.

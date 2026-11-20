@@ -1,6 +1,11 @@
+# 3rd-party dependencies
+#
 import dearpygui.dearpygui as dpg
 
+# own stuff
+#
 from . import applicationPath
+from .scaling import scaled
 
 styleRounding: int = 0
 stylePrimaryColor: tuple[int, int, int] = (30, 120, 0)
@@ -9,6 +14,7 @@ styleSecondaryColor: tuple[int, int, int, int] = (111, 111, 111, 80)
 styleSecondaryColorActive: tuple[int, int, int, int] = (111, 111, 111, 100)
 styleHorizontalPadding: int = 12
 styleScrollbarWidth: int = 16
+styleFontSize: int = 24
 
 
 def getGlobalFont():
@@ -17,7 +23,7 @@ def getGlobalFont():
     with dpg.font_registry():
         return dpg.add_font(
             applicationPath / "fonts" / "JetBrainsMono-Thin.ttf",
-            24
+            scaled(styleFontSize)
         )
 
 
@@ -26,47 +32,54 @@ def getGlobalTheme():
         with dpg.theme_component(dpg.mvAll):
             dpg.add_theme_style(
                 dpg.mvStyleVar_WindowPadding,
-                styleHorizontalPadding, 14,
+                scaled(styleHorizontalPadding), scaled(14),
                 category=dpg.mvThemeCat_Core
             )
             dpg.add_theme_style(
                 dpg.mvStyleVar_FramePadding,
-                10, 6,
+                scaled(10), scaled(6),
                 category=dpg.mvThemeCat_Core
             )
             dpg.add_theme_style(
                 dpg.mvStyleVar_ItemSpacing,
-                8, 6,
+                scaled(8), scaled(6),
                 category=dpg.mvThemeCat_Core
             )
             dpg.add_theme_style(
                 dpg.mvStyleVar_ItemInnerSpacing,
-                5, 4,
+                scaled(5), scaled(4),
+                category=dpg.mvThemeCat_Core
+            )
+            # not changed from Dear ImGui's default (4, 2),
+            # only here to be scaled
+            dpg.add_theme_style(
+                dpg.mvStyleVar_CellPadding,
+                scaled(4), scaled(2),
                 category=dpg.mvThemeCat_Core
             )
             dpg.add_theme_style(
                 dpg.mvStyleVar_GrabMinSize,
-                12,
+                scaled(12),
                 category=dpg.mvThemeCat_Core
             )
             dpg.add_theme_style(
                 dpg.mvStyleVar_ScrollbarSize,
-                styleScrollbarWidth,
+                scaled(styleScrollbarWidth),
                 category=dpg.mvThemeCat_Core
             )
             dpg.add_theme_style(
                 dpg.mvStyleVar_ScrollbarRounding,
-                styleRounding,
+                scaled(styleRounding),
                 category=dpg.mvThemeCat_Core
             )
             dpg.add_theme_style(
                 dpg.mvStyleVar_GrabRounding,
-                styleRounding,
+                scaled(styleRounding),
                 category=dpg.mvThemeCat_Core
             )
             dpg.add_theme_style(
                 dpg.mvStyleVar_TabRounding,
-                styleRounding,
+                scaled(styleRounding),
                 category=dpg.mvThemeCat_Core
             )
 
@@ -193,7 +206,7 @@ def getWindowTheme():
         with dpg.theme_component(dpg.mvAll):
             dpg.add_theme_style(
                 dpg.mvStyleVar_WindowPadding,
-                styleHorizontalPadding, 4,
+                scaled(styleHorizontalPadding), scaled(4),
                 category=dpg.mvThemeCat_Core
             )
         return aboutTheme

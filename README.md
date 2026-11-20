@@ -57,6 +57,18 @@ $ pip install ./dist/tap_adql_sandbox-VERSION-py3-none-any.whl
 ## Running
 
 ``` sh
+$ tap-adql-sandbox
+```
+
+On GNU/Linux the application scales its window, fonts and controls by the content scale of the display, because Dear PyGui doesn't do that on its own (*not in the current version `2.3.1`*). The scale is `Xft.dpi` divided by 96, the same value that Qt and GTK applications use on X11. If the result is too big or too small (*for example, if Wayland compositor already upscales X11 applications*), you can set the scaling factor explicitly:
+
+``` sh
+$ tap-adql-sandbox --ui-scale 1.5
+```
+
+To see all the options:
+
+``` sh
 $ tap-adql-sandbox --help
 ```
 
