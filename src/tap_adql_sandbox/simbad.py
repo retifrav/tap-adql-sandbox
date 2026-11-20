@@ -1,22 +1,21 @@
+# standard libraries
+#
+import logging
+import sys
+import traceback
+
 # 3rd-party dependencies
 #
 import dearpygui.dearpygui as dpg
 from astroquery.simbad import Simbad
 from tabulate import tabulate
-#
-# standard libraries
-#
-import sys
-import traceback
-import logging
-#
+
 # own stuff
 #
 from . import config
-from .theme import (
-    stylePrimaryColor,
-    stylePrimaryColorActive
-)
+from .theme import stylePrimaryColor, stylePrimaryColorActive
+
+logger: logging.Logger = logging.getLogger(__name__)
 
 
 def getSimbadIDs() -> None:
@@ -50,10 +49,10 @@ def getSimbadIDs() -> None:
 
     if oids:
         oidsCnt: int = len(oids)
-        logging.debug(f"IDs found in Simbad: {oidsCnt}")
+        logger.debug(f"IDs found in Simbad: {oidsCnt}")
         if config.debugMode:
             try:
-                # won't look nice with logging.debug(), so it's a print()
+                # won't look nice with logger.debug(), so it's a print()
                 print(
                     tabulate(
                         oids,
@@ -63,7 +62,7 @@ def getSimbadIDs() -> None:
                     )
                 )
             except Exception as ex:
-                logging.warning(f"Couldn't print results. {ex}")
+                logger.warning(f"Couldn't print results. {ex}")
 
         # before astroquery version 0.4.8 this table had
         # an upper-cased `ID` column key, but starting
@@ -73,31 +72,25 @@ def getSimbadIDs() -> None:
         idColumnKey: str = "ID"
         # or compare `astroquery.__version__` with `0.4.7`
         if idColumnKey not in oids.colnames:
-            logging.debug(
-                " ".join((
-                    "There is no upper-cased [ID] key",
-                    "in the resulting table, will try",
-                    "with lower-cased [id] key"
-                ))
+            logger.debug(
+                "There is no upper-cased [ID] key "
+                "in the resulting table, will try "
+                "with lower-cased [id] key"
             )
             idColumnKey = idColumnKey.lower()  # "id"
             if idColumnKey not in oids.colnames:
                 errorMsg = "Resulting table has neither [ID] nor [id] column"
-                logging.error(errorMsg)
+                logger.error(errorMsg)
                 if len(oids.colnames) > 0:
-                    logging.debug(
-                        " ".join((
-                            "Here are all the columns/keys",
-                            "in this table:",
-                            ", ".join(oids.colnames)
-                        ))
+                    logger.debug(
+                        "Here are all the columns/keys "
+                        "in this table: "
+                        f"{', '.join(oids.colnames)}"
                     )
                 else:
-                    logging.debug(
-                        " ".join((
-                            "There are no columns/keys",
-                            "in this table at all"
-                        ))
+                    logger.debug(
+                        "There are no columns/keys "
+                        "in this table at all"
                     )
                 dpg.set_value("errorMessageSimbadIDs", f"{errorMsg}.")
                 dpg.show_item("errorMessageSimbadIDs")
@@ -147,7 +140,7 @@ def getSimbadIDs() -> None:
                         index += 1
         except Exception as ex:
             errorMsg = "Couldn't generate the results table"
-            logging.error(f"{errorMsg}. {ex}")
+            logger.error(f"{errorMsg}. {ex}")
             if config.debugMode:
                 traceback.print_exc(file=sys.stderr)
             dpg.set_value(

@@ -10,6 +10,7 @@
 - [Running](#running)
 - [Platforms](#platforms)
 - [Known problems](#known-problems)
+    - [Installation fails on a too new Python version](#installation-fails-on-a-too-new-python-version)
     - [Application tries to connect to remote hosts on startup and sometimes crashes](#application-tries-to-connect-to-remote-hosts-on-startup-and-sometimes-crashes)
     - [Queries might fail with UnicodeDecodeError](#queries-might-fail-with-unicodedecodeerror)
 - [3rd-party](#3rd-party)
@@ -74,6 +75,23 @@ Tested on:
 
 ## Known problems
 
+### Installation fails on a too new Python version
+
+Some dependencies such as Dear PyGui are published only as pre-built wheels (*with no source package to build from*), and wheels for latest Python versions might appear only after some time. Until then, installing this application into an environment such a Python version may fail:
+
+``` sh
+ERROR: Could not find a version that satisfies the requirement dearpygui>=1.5.0 (from versions: none)
+ERROR: No matching distribution found for dearpygui>=1.5.0
+```
+
+or, with `uv pip install`:
+
+``` sh
+hint: You require CPython 3.15 (`cp315`), but we only found wheels for `dearpygui` (v2.3.1) with the following Python ABI tags: `cp38`, `cp39`, `cp310`, `cp311`, `cp312`, `cp313`, `cp314`
+```
+
+So until Dear PyGui release with wheels for your Python version becomes available, use an environment with an older Python version.
+
 ### Application tries to connect to remote hosts on startup and sometimes crashes
 
 Sometimes when you are just launching the application, so you didn't even have a chance to execute any queries, you might notice that it tries to reach various remote hosts on the internet, such as `obspm.fr`, `ietf.org` or probably others.
@@ -102,8 +120,7 @@ If query results from a TAP service contain non-ASCII symbols, then PyVO will ra
 
 ### Dependencies
 
-- Python `3.6` or later
-    + or at least it should work with `3.6`, but the oldest tested version was actually `3.7`, and that was quite some time ago, so you better stick with a more recent version
+- Python `3.12` or later
 - [Dear PyGui](https://pypi.org/project/dearpygui/) - application window and UI controls
 - [PyVO](https://pypi.org/project/pyvo/) - handling TAP ADQL requests
 - [Astroquery](https://pypi.org/project/astroquery/) - looking up IDs in Simbad

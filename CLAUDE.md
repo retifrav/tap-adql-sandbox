@@ -1,0 +1,54 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this is
+
+A desktop GUI ([Dear PyGui](https://pypi.org/project/dearpygui/)) for running ADQL queries against TAP services through PyVO, plus a SIMBAD ID lookup window through astroquery. It is published on PyPI as `tap-adql-sandbox`, and the console entry point is `tap_adql_sandbox.__main__:main`. There are no tests.
+
+## Commands
+
+**Before changing lint, type-check or build commands, read `.claude/notes/tooling.md`**: it holds the measurements behind the rules below.
+
+- Lint: `ruff check`, run from the repo root. Its config is `[tool.ruff]` in `pyproject.toml`: `target-version = "py312"` plus ruff's own default rule set, which is deliberately not pinned, with only `BLE001` ignored (the GUI catches any exception from PyVO, astroquery or Dear PyGui to show it in the window). When an image bump brings a ruff with new default rules, fix the new findings instead of ignoring them or pinning the old set.
+- Never run `ruff format`: the code isn't ruff-formatted, and it would rewrite most files.
+- Type check: `ty check`, run from the repo root. Its config is `[tool.ty]` in `pyproject.toml`: `python-version = "3.12"`, and `allowed-unresolved-imports`, which lists a glob for every third-party module the code imports plus `setuptools` for `setup.py`. That is what lets it run in the container, where none of them is installed, so an import of a new dependency needs a glob there or ty fails with `unresolved-import`. mypy has been dropped (the `[mypy]` section in `setup.cfg` is gone); don't reintroduce it.
+- Build: `uv build --out-dir <scratchpad>/dist`. `dist/` in the tree is gitignored and holds stale 0.8.1 artifacts. The README's documented routes are `pip install ./` and `python -m build`.
+- Smoke-run in the container: `uv run --isolated --no-project --with <built .whl> tap-adql-sandbox --version` (or `--help`). All dependencies install on arm64 (verified; x86_64 untested), and every module is imported before argparse runs, so this also proves the imports work. It needs PyPI, which is sometimes unreachable from the container. The GUI itself needs a display, which the container doesn't have.
+- `uv run --with .` also works, but setuptools leaves an in-tree `build/` behind. Delete it afterwards.
+
+## Architecture
+
+- `__main__.py` builds the entire UI imperatively inside `main()`: the menu bar, main window, save-file dialog, About window, theme bindings, handler registries and viewport. It also holds the query callbacks. `simbad.py` builds the SIMBAD window and its callback, `examples.py` is pure data, `theme.py` has the font and theme factories, `config.py` holds runtime settings, and `__init__.py` defines `applicationPath` and `settingsFile`.
+- Widgets are addressed by **string tags**, not by references. Callbacks reach them with `dpg.get_value("errorMessage")`, `dpg.show_item("resultsGroup")` and so on, and theme bindings at the end of `main()` use the same tags. So renaming a tag means grepping both `__main__.py` and `simbad.py`. The SIMBAD window uses `…SimbadIDs`-suffixed tags. The `"cell-handler"` item handler registry (right-click copies a cell) is created in `main()` and shared by both results tables.
+- Both lookup flows (`executeQuery`, `getSimbadIDs`) follow the same sequence:
+  1. Hide previous results and errors, and show the loading indicator.
+  2. Validate the input.
+  3. Query.
+  4. Delete the results table and rebuild it from scratch under its group parent.
+  5. Restore the button.
+
+  Every early `return` must restore the button and indicator state: `showLoading(False)` in the main window, a manual hide/show pair in `simbad.py`.
+- `config` is mutable module state, overwritten from the CLI arguments in `main()` after import. Always use `from . import config` and read `config.debugMode` at call time. `from .config import debugMode` would freeze the default.
+- The query path is `pyvo.dal.TAPService(url).search(query)` → `results.to_table().to_pandas()`. The result goes into the module global `lastQueryResults`, which is what "Save results to pickle" writes. With Dear PyGui < 2.0 a guard refuses to render more than `config.dpgColumnsMax` (64) columns, because older Dear PyGui crashes on them (issues #8, #14). The version comparison uses `packaging`, which is imported but not listed in `install_requires`: it only arrives transitively.
+- The SIMBAD lookup uses `Simbad.query_objectids`. The ID column is `ID` before astroquery 0.4.8 and `id` from 0.4.8 on, and both cases are handled deliberately.
+- `examples.py` holds `tapServices`: service key → `name`, `url` and `examples` (a list of `{description, query}`). The Help → Examples submenus are generated from it in insertion order. The query prefilled at startup is picked **by position**, `tapServices["padc"]["examples"][5]`, so inserting or reordering PADC examples silently changes it.
+- Fonts and icons are loaded relative to `applicationPath`, and they reach the wheel only through the `graft` lines in `MANIFEST.in` plus `include_package_data=True` in `setup.py`. A new resource directory needs its own `MANIFEST.in` line.
+- On exit Dear PyGui saves window layout to `settings.ini` inside the package directory (`settingsFile`, wired up through `init_file`). The file is gitignored.
+- `--debug` turns on several things:
+  - DEBUG logging with timestamps (all logging goes to stdout). Modules log through their own `logger: logging.Logger = logging.getLogger(__name__)`, never through `logging.debug()` and friends (ruff `LOG015`). The `logging.basicConfig` call in `main()` configures the root logger they propagate to, and its format has no `%(name)s`.
+  - A `tabulate` dump of each result. It is a deliberate `print`, not logging.
+  - Tracebacks to stderr.
+  - A Dev menu.
+  - A prefilled SIMBAD input.
+- The README's "Known problems" section covers two dependency-side issues: astropy contacts remote hosts at startup, and PyVO raises `UnicodeDecodeError` on non-ASCII results (#19).
+
+## Conventions
+
+- Functions and variables use camelCase (`executeQuery`, `lastQueryResults`), and module-level variables carry type annotations.
+- Long strings are adjacent string literals inside parentheses (implicit concatenation), one fragment per line, each ending with the space that separates it from the next. Plain and f-string fragments mix freely, and an argument that is only the string needs no extra parentheses. `str.join` is only for runtime sequences (`".".join(map(str, …))`, `", ".join(oids.colnames)`). A fixed tuple of fragments trips ruff's `FLY002`, and inside a list or tuple the concatenation needs its own parentheses (`ISC004`). Example queries put an explicit `\n` at the end of each line.
+- Imports come in three groups in this order: `# standard libraries`, `# 3rd-party dependencies`, `# own stuff`. Each group starts with its header comment and a bare `#` line, and a blank line separates the groups. ruff's `I001` enforces the sorting within each group. The headers of the 3rd-party and own groups survive sorting only because each is attached to the first import of its group. So a new import that sorts above that one has to be written directly below the header, otherwise `ruff check --fix` puts it above the header. This was verified on stdin. The first group's header is safe either way, because it's the file's leading comment.
+- Python 3.12 is the minimum, so 3.12 syntax is fine (PEP 695 `type` statements, PEP 701 f-strings, parenthesized context managers). It is declared in five places that change together: `python_requires` and the classifier in `setup.cfg`, the README's Dependencies list, `target-version` under `[tool.ruff]` and `python-version` under `[tool.ty.environment]` in `pyproject.toml`. Ask before raising it further.
+- The version has a single source, `__version_info__` in `version.py`, which `setup.cfg` reads through `attr:`. A release bumps it and adds a `changelog.md` section: `## X.Y.Z`, then ``Released on `YYYY-MM-DD`.``, then bullets. The release commit is titled `Version X.Y.Z`. Commits about an issue start with `Closed #N:` or `For #N:`.
+- `README.md` and `changelog.md` carry MarkdownTOC blocks (a Sublime Text plugin) between `<!-- MarkdownTOC -->` markers. When you add or rename a heading, update the block by hand in its existing format.
+- The git remote uses an SSH URL, so fetch and push don't work from the container. The only branch is `master`.

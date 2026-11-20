@@ -1,24 +1,26 @@
 import dearpygui.dearpygui as dpg
-from typing import Tuple
+
 from . import applicationPath
 
 styleRounding: int = 0
-stylePrimaryColor: Tuple[int, int, int] = (30, 120, 0)
-stylePrimaryColorActive: Tuple[int, int, int] = (30, 140, 0)
-styleSecondaryColor: Tuple[int, int, int, int] = (111, 111, 111, 80)
-styleSecondaryColorActive: Tuple[int, int, int, int] = (111, 111, 111, 100)
+stylePrimaryColor: tuple[int, int, int] = (30, 120, 0)
+stylePrimaryColorActive: tuple[int, int, int] = (30, 140, 0)
+styleSecondaryColor: tuple[int, int, int, int] = (111, 111, 111, 80)
+styleSecondaryColorActive: tuple[int, int, int, int] = (111, 111, 111, 100)
 styleHorizontalPadding: int = 12
 styleScrollbarWidth: int = 16
 
 
 def getGlobalFont():
-    with dpg.font_registry():
-        with dpg.font(
+    with (
+        dpg.font_registry(),
+        dpg.font(
             applicationPath / "fonts" / "JetBrainsMono-Thin.ttf",
             24
-        ) as globalFont:
-            dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
-            return globalFont
+        ) as globalFont
+    ):
+        dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
+        return globalFont
 
 
 def getGlobalTheme():

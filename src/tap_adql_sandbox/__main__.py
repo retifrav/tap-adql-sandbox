@@ -1,43 +1,43 @@
+# standard libraries
+#
+import argparse
+import logging
+import pathlib
+import sys
+import traceback
+import typing
+import webbrowser
+from time import sleep
+
 # 3rd-party dependencies
 #
 import dearpygui.dearpygui as dpg
-from dearpygui.demo import show_demo
-from dearpygui import __version__ as dpgVersion  # get_dearpygui_version()
-#
-from tabulate import tabulate
-import pathlib
 import pandas
 import pyvo
-#
-# standard libraries
-#
-from time import sleep
-import argparse
-import sys
-import traceback
-import webbrowser
+from dearpygui import __version__ as dpgVersion  # get_dearpygui_version()
+from dearpygui.demo import show_demo
 from packaging.version import Version
-import logging
-import typing
-#
+from tabulate import tabulate
+
 # own stuff
 #
-from . import config
-from . import applicationPath, settingsFile
-from .simbad import simbadWindow, showSimbadIDsWindow
-from .version import __version__, __copyright__
+from . import applicationPath, config, settingsFile
+from .examples import tapServices
+from .simbad import showSimbadIDsWindow, simbadWindow
 from .theme import (
-    stylePrimaryColor,
-    stylePrimaryColorActive,
+    getCellDefaultTheme,
+    getCellHighlightedTheme,
+    getErrorTheme,
     getGlobalFont,
     getGlobalTheme,
-    getErrorTheme,
+    getHyperlinkTheme,
     getWindowTheme,
-    getCellHighlightedTheme,
-    getCellDefaultTheme,
-    getHyperlinkTheme
+    stylePrimaryColor,
+    stylePrimaryColorActive,
 )
-from .examples import tapServices
+from .version import __copyright__, __version__
+
+logger: logging.Logger = logging.getLogger(__name__)
 
 mainWindowID: str = "main-window"
 queryTextID: str = "query-text"
@@ -73,9 +73,7 @@ def showLoading(isLoading: bool) -> None:
 
 
 def keyPressCallback(sender, app_data) -> None:
-    global executingQuery
-
-    # logging.debug(f"sender: {sender}, app_data: {app_data}")
+    # logger.debug(f"sender: {sender}, app_data: {app_data}")
 
     # dpg.is_item_focused
     if not dpg.is_item_active(queryTextID) or executingQuery:
@@ -83,11 +81,9 @@ def keyPressCallback(sender, app_data) -> None:
 
     if dpg.is_key_down(dpg.mvKey_R):
         # executingQuery = True
-        logging.debug(
-            " ".join((
-                "Triggered executing query",
-                "from the keyboard shortcut"
-            ))
+        logger.debug(
+            "Triggered executing query "
+            "from the keyboard shortcut"
         )
         executeQuery()
 
@@ -122,23 +118,23 @@ def executeQuery() -> None:
         showLoading(False)
         return
 
-    logging.debug(f"Query to execute:\n{queryText}")
+    logger.debug(f"Query to execute:\n{queryText}")
 
     results: pyvo.dal.DALResults = {}
     try:
         service = pyvo.dal.TAPService(serviceURL)
         results = service.search(queryText)
     except Exception as ex:
-        logging.debug(f"Query failed: {ex}")
+        logger.debug(f"Query failed: {ex}")
         dpg.set_value("errorMessage", ex)
         dpg.show_item("errorMessage")
         showLoading(False)
         return
 
-    logging.debug(f"Results found: {len(results)}")
+    logger.debug(f"Results found: {len(results)}")
     if config.debugMode:
         try:
-            # won't look nice with logging.debug(), so it's a print()
+            # won't look nice with logger.debug(), so it's a print()
             print(
                 tabulate(
                     results.to_table(),
@@ -148,11 +144,11 @@ def executeQuery() -> None:
                 )
             )
         except Exception as ex:
-            logging.warning(f"Couldn't print results. {ex}")
+            logger.warning(f"Couldn't print results. {ex}")
 
     lastQueryResults = results.to_table().to_pandas()
     rowsCount, columnsCount = lastQueryResults.shape
-    logging.debug(f"Columns: {columnsCount}, rows: {rowsCount}")
+    logger.debug(f"Columns: {columnsCount}, rows: {rowsCount}")
     if (
         # https://github.com/retifrav/tap-adql-sandbox/issues/8
         # https://github.com/retifrav/tap-adql-sandbox/issues/14
@@ -162,14 +158,14 @@ def executeQuery() -> None:
     ):
         dpg.set_value(
             "errorMessage",
-            " ".join((
-                "You have requested too many columns in your query.",
-                f"Dear PyGui version {dpgVersion} only supports maximum",
-                f"{config.dpgColumnsMax} columns in a table, and so trying",
-                "to display results for your query will crash",
-                "the application. Remove some columns from your SELECT",
+            (
+                "You have requested too many columns in your query. "
+                f"Dear PyGui version {dpgVersion} only supports maximum "
+                f"{config.dpgColumnsMax} columns in a table, and so trying "
+                "to display results for your query will crash "
+                "the application. Remove some columns from your SELECT "
                 "statement and try again."
-            ))
+            )
         )
         dpg.show_item("errorMessage")
         showLoading(False)
@@ -227,7 +223,7 @@ def executeQuery() -> None:
                         cellIndex += 1
     except Exception as ex:
         errorMsg = "Couldn't generate the results table"
-        logging.error(f"{errorMsg}. {ex}")
+        logger.error(f"{errorMsg}. {ex}")
         if config.debugMode:
             traceback.print_exc(file=sys.stderr)
         dpg.set_value(
@@ -248,28 +244,28 @@ def preFillExample(sender, app_data, user_data: tuple[str, str]) -> None:
 
 
 def saveResultsToPickle(sender, app_data, user_data) -> None:
-    logging.debug(f"app_data: {app_data}")
+    logger.debug(f"app_data: {app_data}")
     # this check might be redundant,
     # as dialog window apparently performs it on its own
     pickleFileDir: pathlib.Path = pathlib.Path(app_data["current_path"])
     if not pickleFileDir.is_dir():
-        logging.error(f"The [{pickleFileDir}] directory does not exist")
+        logger.error(f"The [{pickleFileDir}] directory does not exist")
         return
     pickleFile: pathlib.Path = pickleFileDir / app_data["file_name"]
     try:
         lastQueryResults.to_pickle(pickleFile)
     except Exception as ex:
-        logging.error(f"Couldn't save results to [{pickleFile}]: {ex}")
+        logger.error(f"Couldn't save results to [{pickleFile}]: {ex}")
         return
 
 
 def cellClicked(sender, app_data) -> None:
-    # logging.debug(f"sender: {sender}, app_data: {app_data}")
+    # logger.debug(f"sender: {sender}, app_data: {app_data}")
 
     # mouse right click
     if app_data[0] == 1:
         cellValue = dpg.get_value(app_data[1])
-        # logging.debug(f"cellValue: {cellValue}")
+        # logger.debug(f"cellValue: {cellValue}")
         dpg.set_clipboard_text(cellValue)
         dpg.set_value(app_data[1], "[copied]")
         dpg.bind_item_theme(app_data[1], getCellHighlightedTheme())
@@ -286,11 +282,11 @@ def showDPGabout() -> None:
 def main() -> None:
     argParser = argparse.ArgumentParser(
         prog="tap-adql-sandbox",
-        description=" ".join((
-            f"%(prog)s\n{__copyright__}\nA",
-            "sandbox application for executing ADQL queries",
+        description=(
+            f"%(prog)s\n{__copyright__}\nA "
+            "sandbox application for executing ADQL queries "
             "via TAP interface of various data sources"
-        )),
+        ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         allow_abbrev=False
     )
@@ -307,10 +303,10 @@ def main() -> None:
     argParser.add_argument(
         "--no-enum-column",
         action='store_true',
-        help=" ".join((
-            "add artificial first column",
+        help=(
+            "add artificial first column "
             "to enumerate results (default: %(default)s)"
-        ))
+        )
     )
     argParser.add_argument(
         "--tbl-flt-prcs",
@@ -318,7 +314,7 @@ def main() -> None:
         help="floating point precision for tabulate output"
     )
     cliArgs = argParser.parse_args()
-    # logging.debug(cliArgs)
+    # logger.debug(cliArgs)
 
     config.debugMode = cliArgs.debug
     config.noEnumerationColumn = cliArgs.no_enum_column
@@ -467,11 +463,11 @@ def main() -> None:
             # FIXME doesn't work (yet)
             # https://github.com/hoffstadt/DearPyGui/issues/1519
             hint="ADQL query",
-            default_value="".join((
-                "SELECT TOP 11 *\n",
-                "FROM some_table\n",
+            default_value=(
+                "SELECT TOP 11 *\n"
+                "FROM some_table\n"
                 "WHERE some_thing = 1"
-            )),
+            ),
             width=-1,
             height=300,
             multiline=True,
@@ -550,13 +546,11 @@ def main() -> None:
         show=False
     ):
         dpg.add_text(
-            "".join((
-                "A sandbox application for executing ",
-                "ADQL queries via TAP interface\n",
-                "of various data sources, ",
-                "such as astronomical databases, using PyVO.\n",
-                "Essentially, this is a GUI for PyVO."
-            ))
+            "A sandbox application for executing "
+            "ADQL queries via TAP interface\n"
+            "of various data sources, "
+            "such as astronomical databases, using PyVO.\n"
+            "Essentially, this is a GUI for PyVO."
         )
 
         dpg.add_text(f"Version: {__version__}")
