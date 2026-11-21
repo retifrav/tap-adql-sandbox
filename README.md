@@ -17,6 +17,7 @@
 - [3rd-party](#3rd-party)
     - [Dependencies](#dependencies)
     - [Resources](#resources)
+- [Donation](#donation)
 
 <!-- /MarkdownTOC -->
 
@@ -170,3 +171,10 @@ That applies to:
 
 - [JetBrains Mono](https://www.jetbrains.com/lp/mono/) font
 - [an icon](https://github.com/retifrav/tap-adql-sandbox/tree/master/src/tap_adql_sandbox/icons) of unknown origin
+
+## Donation
+
+You can support this project via [GitHub Sponsors](https://github.com/sponsors/retifrav) or by donating cryptocurrency to either of the following wallets (*[signed variant](https://decovar.dev/donation.txt)*):
+
+- XLM: `GDYB2QGJYWT6VPT7O7INWIGRGJF5ZEAQ7Y73S4T47IOP2QQ554NPN3ZM`
+- BTC: `bc1q2kfqwm2kwyw37ay2g4tnguasvp6j4hsmtrgjte`
