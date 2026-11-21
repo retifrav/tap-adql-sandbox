@@ -27,11 +27,14 @@ from .simbad import showSimbadIDsWindow, simbadWindow
 from .theme import (
     getCellDefaultTheme,
     getCellHighlightedTheme,
+    getCopyableTheme,
     getErrorTheme,
     getGlobalFont,
     getGlobalTheme,
     getHyperlinkTheme,
+    getInlineTheme,
     getWindowTheme,
+    styleFramePadding,
     stylePrimaryColor,
     stylePrimaryColorActive,
 )
@@ -44,6 +47,14 @@ queryTextID: str = "query-text"
 serviceUrlID: str = "service-url"
 
 repositoryURL: str = "https://github.com/retifrav/tap-adql-sandbox"
+
+# the same as in the Donation section of README.md
+sponsorsURL: str = "https://github.com/sponsors/retifrav"
+donationSignedURL: str = "https://decovar.dev/donation.txt"
+donationWallets: dict[str, str] = {
+    "XLM": "GDYB2QGJYWT6VPT7O7INWIGRGJF5ZEAQ7Y73S4T47IOP2QQ554NPN3ZM",
+    "BTC": "bc1q2kfqwm2kwyw37ay2g4tnguasvp6j4hsmtrgjte"
+}
 
 lastQueryResults: pandas.DataFrame = pandas.DataFrame()
 executingQuery: bool = False
@@ -278,6 +289,22 @@ def cellClicked(sender, app_data) -> None:
         dpg.set_value(app_data[1], cellValue)
 
 
+def walletAddressClicked(
+    sender,
+    app_data,
+    user_data: tuple[str, int | str, int | str]
+) -> None:
+    address, copyableTheme, copiedTheme = user_data
+    dpg.set_clipboard_text(address)
+    # padded on the right to the length of the address, so it starts where the address starts,
+    # and the button keeps its width (the font is monospaced)
+    dpg.configure_item(sender, label="[copied]".ljust(len(address)))
+    dpg.bind_item_theme(sender, copiedTheme)
+    sleep(1)
+    dpg.bind_item_theme(sender, copyableTheme)
+    dpg.configure_item(sender, label=address)
+
+
 def showDPGabout() -> None:
     dpg.hide_item("aboutWindow")
     dpg.show_about()
@@ -377,6 +404,7 @@ def main() -> None:
     # --- Simbad window
     #
     simbadWindow()
+
     #
     # --- main window
     #
@@ -477,9 +505,14 @@ def main() -> None:
                 dpg.add_separator()
                 dpg.add_spacer()
                 dpg.add_menu_item(
-                    label="About...",
+                    label="Donation",
+                    callback=lambda: dpg.show_item("donationWindow")
+                )
+                dpg.add_menu_item(
+                    label="About",
                     callback=lambda: dpg.show_item("aboutWindow")
                 )
+
         #
         # -- contents
         #
@@ -533,6 +566,7 @@ def main() -> None:
             dpg.add_text(default_value="Query results:")
             with dpg.table(tag="resultsTable"):
                 dpg.add_table_column(label="Results")
+
     #
     # --- save file dialog
     #
@@ -546,6 +580,7 @@ def main() -> None:
         callback=saveResultsToPickle
     ):
         dpg.add_file_extension(".pkl", color=(30, 225, 0))
+
     #
     # --- error dialog
     #
@@ -565,6 +600,59 @@ def main() -> None:
     #         callback=lambda: dpg.hide_item("errorDialog")
     #     )
     #     dpg.add_spacer(height=2)
+
+    #
+    # --- donation window
+    #
+    with dpg.window(
+        tag="donationWindow",
+        label="Donation",
+        modal=True,
+        min_size=(scaled(780), scaled(300)),
+        show=False
+    ):
+        # Dear ImGui can't flow a text around a hyperlink, so the paragraph is broken explicitly
+        with dpg.group() as supportParagraph:
+            # the offset from the top that a standalone text would get,
+            # which the inline theme takes away
+            dpg.add_spacer(height=scaled(styleFramePadding[1]))
+            with dpg.group(horizontal=True):
+                dpg.add_text("You can support this project via ")
+                add_hyperlink("GitHub Sponsors", sponsorsURL)
+                dpg.add_text(" or by donating")
+            dpg.add_text("cryptocurrency to either of the following wallets:")
+        dpg.bind_item_theme(supportParagraph, getInlineTheme())
+
+        dpg.add_spacer(height=scaled(6))
+        # created once here, so clicking doesn't create new themes every time
+        copyableTheme = getCopyableTheme()
+        copiedTheme = getCopyableTheme(copied=True)
+        for currency, address in donationWallets.items():
+            with dpg.group(horizontal=True):
+                dpg.add_text(f"- {currency}:")
+                walletButton = dpg.add_button(
+                    label=address,
+                    user_data=(address, copyableTheme, copiedTheme),
+                    callback=walletAddressClicked
+                )
+                dpg.bind_item_theme(walletButton, copyableTheme)
+                with dpg.tooltip(walletButton):
+                    dpg.add_text("Click to copy")
+
+        #dpg.add_spacer(height=scaled(2))
+        with dpg.group(horizontal=True):
+            dpg.add_text("Signed variant:")
+            add_hyperlink(donationSignedURL, donationSignedURL)
+
+        dpg.add_spacer()
+        dpg.add_separator()
+        dpg.add_spacer(height=scaled(10))
+        dpg.add_button(
+            label="Close",
+            callback=lambda: dpg.hide_item("donationWindow")
+        )
+        dpg.add_spacer(height=scaled(2))
+
     #
     # --- about window
     #
@@ -615,6 +703,7 @@ def main() -> None:
     dpg.bind_theme(getGlobalTheme())
     dpg.bind_item_theme("errorMessage", getErrorTheme())
     dpg.bind_item_theme("errorMessageSimbadIDs", getErrorTheme())
+    dpg.bind_item_theme("donationWindow", getWindowTheme())
     dpg.bind_item_theme("aboutWindow", getWindowTheme())
     # dpg.bind_item_theme("errorDialog", getWindowTheme())
     # dpg.bind_item_theme("errorDialogText", getErrorTheme())

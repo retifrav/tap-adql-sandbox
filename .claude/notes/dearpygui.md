@@ -49,6 +49,17 @@ Evidence behind the Dear PyGui rules in `CLAUDE.md`, gathered on 2026-11-20 from
 - `wrap` (`src/mvBasicWidgets.cpp`, 2.3.0 and 2.3.1): `0` → `ImGui::PushTextWrapPos(0)`, which wraps at the window edge; `> 0` → wraps `wrap` pixels from the item's start; `-1` (the default) → no wrapping. Dear PyGui issue #1275 ("Add TextWrapped") is still open, but doesn't affect `wrap=0`.
 - Multiline input: `if (config.multiline) config.hint.clear();` before drawing, so `hint` never shows there. Issue #1519 ("Hint argument of add_input_text doesn't work with multiline") was closed as completed on 2023-01-04 by exactly this.
 
+## Text layout
+
+Measured on 2026-11-21 with Dear PyGui 2.3.1 on Xvfb (x86_64), with `get_item_rect_min`/`get_item_rect_max` of every text and button in the Donation and About windows, at `--ui-scale 1` and `2`. Numbers are y pixels at scale 1 (scale 2 doubles them exactly). The window content starts at y = 43 (title bar plus `getWindowTheme`'s 4 px `WindowPadding.y`).
+
+- A standalone text behaves as if it were aligned to the frame padding (`AlignTextToFramePadding`): its rect starts `FramePadding.y` (6) below the cursor, and its line ends `FramePadding.y` below the text. About's three-line first paragraph is 49–121 (lines at 49, 73, 97), and the next text, "Version", starts at 133: 6 of padding plus 6 of `ItemSpacing.y`. So two separate text items are 30 px apart, but the lines of one multiline text are 24 px apart.
+- In a horizontal group, a text before a button with the default `FramePadding` is level with the button's label: the address button is 108–144, so its label starts at 114, and `XLM:` is 114–138. With `FramePadding.y` = 0 on the button alone, the button was 138–162 (so its label at 138) while `XLM:` stayed 6 below the line top, at 144: the address sat 6 px too high.
+- `getInlineTheme()` (`FramePadding` and `ItemSpacing` both 0) bound to a vertical group holding a `styleFramePadding[1]` spacer, a horizontal group (text, hyperlink, text) and a second text gives lines at 49–73 and 73–97. That is exactly About's first paragraph. At scale 2 both are 95, 143, 191.
+- An item theme bound to a group is still in effect when the group ends: with `ItemSpacing` 0 on a horizontal group, the next item started right at its bottom. That's why the spacer and the second line have to be inside the themed group, and why the paragraph is followed directly by the next item, with no spacing.
+- Leading and trailing spaces count in a text's width. With `ItemSpacing.x` = 0, `"… via "`, the hyperlink and `" or …"` touch exactly (375 → 375, 539 → 539), and the gaps look like ordinary spaces.
+- Not tried: `wrap=0` on the text after the hyperlink. Dear ImGui would start the continuation lines at that text's own x, not at the window's left edge, so it can't make the paragraph wrap by itself.
+
 ## Headless harness
 
 - `main()` builds the whole UI without a display if `dpg.create_viewport` is patched to raise. All items, handler registries, the font and the themes then exist and can be inspected with `get_item_configuration`, and `executeQuery()` can be driven with a fake `pyvo.dal.TAPService` whose `search()` returns an object with `__len__` and `to_table().to_pandas()`.

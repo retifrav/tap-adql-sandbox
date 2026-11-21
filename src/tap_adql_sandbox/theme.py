@@ -12,7 +12,9 @@ stylePrimaryColor: tuple[int, int, int] = (30, 120, 0)
 stylePrimaryColorActive: tuple[int, int, int] = (30, 140, 0)
 styleSecondaryColor: tuple[int, int, int, int] = (111, 111, 111, 80)
 styleSecondaryColorActive: tuple[int, int, int, int] = (111, 111, 111, 100)
+styleHighlightColor: tuple[int, int, int] = (255, 255, 0)
 styleHorizontalPadding: int = 12
+styleFramePadding: tuple[int, int] = (10, 6)
 styleScrollbarWidth: int = 16
 styleFontSize: int = 24
 
@@ -37,7 +39,7 @@ def getGlobalTheme():
             )
             dpg.add_theme_style(
                 dpg.mvStyleVar_FramePadding,
-                scaled(10), scaled(6),
+                scaled(styleFramePadding[0]), scaled(styleFramePadding[1]),
                 category=dpg.mvThemeCat_Core
             )
             dpg.add_theme_style(
@@ -184,7 +186,7 @@ def getCellHighlightedTheme():
         with dpg.theme_component(dpg.mvAll):
             dpg.add_theme_color(
                 dpg.mvThemeCol_Text,
-                (255, 255, 0),
+                styleHighlightColor,
                 category=dpg.mvThemeCat_Core
             )
         return cellHighlightedTheme
@@ -223,3 +225,54 @@ def getHyperlinkTheme():
             )
             dpg.add_theme_color(dpg.mvThemeCol_Text, [29, 151, 236])
         return hyperlinkTheme
+
+
+# for a paragraph of texts and hyperlinks that has to look like a multiline text.
+# Dear PyGui aligns every text to the frame padding, so a standalone text gets
+# `FramePadding.y` above and below it, which puts a gap between such lines.
+# Here there is no frame padding, so the lines are only as tall as the text
+# and the hyperlinks sit on the same baseline, and no item spacing, so the lines
+# follow each other without a gap and the items within a line touch (the texts
+# carry their own spaces)
+def getInlineTheme():
+    with dpg.theme() as inlineTheme:
+        with dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_style(
+                dpg.mvStyleVar_FramePadding,
+                0, 0,
+                category=dpg.mvThemeCat_Core
+            )
+            dpg.add_theme_style(
+                dpg.mvStyleVar_ItemSpacing,
+                0, 0,
+                category=dpg.mvThemeCat_Core
+            )
+        return inlineTheme
+
+
+# a button that looks like a text, for copying its label on click
+def getCopyableTheme(copied: bool = False):
+    with dpg.theme() as copyableTheme:
+        with dpg.theme_component(dpg.mvButton):
+            dpg.add_theme_color(
+                dpg.mvThemeCol_Button,
+                (0, 0, 0, 0),
+                category=dpg.mvThemeCat_Core
+            )
+            dpg.add_theme_color(
+                dpg.mvThemeCol_ButtonHovered,
+                styleSecondaryColor,
+                category=dpg.mvThemeCat_Core
+            )
+            dpg.add_theme_color(
+                dpg.mvThemeCol_ButtonActive,
+                styleSecondaryColorActive,
+                category=dpg.mvThemeCat_Core
+            )
+            if copied:
+                dpg.add_theme_color(
+                    dpg.mvThemeCol_Text,
+                    styleHighlightColor,
+                    category=dpg.mvThemeCat_Core
+                )
+        return copyableTheme
