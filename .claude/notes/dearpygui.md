@@ -128,3 +128,49 @@ Gathered on 2026-11-20 from the v2.3.1 sources, the `cp313` `manylinux1_x86_64` 
   - Point `tap_adql_sandbox.__main__.settingsFile` outside the tree, because the tree has a real, gitignored `settings.ini`.
   - Replace `pyvo.dal.TAPService` with a fake whose `search()` returns an object with `__len__` and `to_table().to_pandas()`. Calling `app.executeQuery()` from a frame callback then fills a results table without any network access.
 - Mesa renders GLX in Xvfb without complaint. The venv was `uv venv --python /usr/bin/python3` plus the Dear PyGui wheel, `pyvo`, `astroquery`, `pandas` and `tabulate`, and the app ran from `PYTHONPATH=/workspace/src`.
+
+## Syntax highlighting
+
+Researched on 2026-11-21 for the ADQL query input (`queryTextID` in `__main__.py`) from the installed 2.3.1 wheel (`dearpygui.py`, the x86_64 `_dearpygui.so`), Dear ImGui's `imgui_widgets.cpp` at `v1.92.5` (`InputTextEx`) and Dear PyGui's GitHub issues. Nothing was prototyped.
+
+### Decision
+
+- The user deferred it until Dear PyGui has a code editor widget, and declined both workarounds below for now.
+- When it is done, the user wants it switchable two ways: a `--no-syntax-highlighting` CLI flag for the startup state, like `--no-enum-column`, and a checkbox menu item at runtime. The choice isn't persisted, because the app has no settings file (`settings.ini` is only Dear PyGui's window layout).
+
+### Nothing ready-made
+
+- In 2.3.1 the only `dearpygui.py` matches for editor, highlight and syntax are the node editor, the style editor, the color editor, plot-series highlighting and `readonly`'s text selection. `nm -D` on `_dearpygui.so` finds no `TextEditor` or `LanguageDefinition` symbols. `add_input_text` has a single text color.
+- Upstream: #1194 ("Add JSON syntax highlighting as optional parameter for add_input_text") was opened and closed on 2021-08-20 with "This will be handled with the text editing widget!", which points to #173 ("Text Editing Widget", opened 2020-09-05). #173 was closed on 2022-09-24 with "Closing as this will likely be pushed to DPG 2". 2.3.1 has no such widget, and a May 2025 question in #173 is unanswered.
+- The Dear ImGui addon is ImGuiColorTextEdit (BalazsJako, no longer maintained by its author; the maintained fork is `goossens/ImGuiColorTextEdit`, which tracks Dear ImGui 1.92.x). It has an SQL language definition. It is C++, and its only Python bindings are in imgui_bundle (pthom), a different framework, so using them means rewriting the UI. The other route is a C++ contribution to Dear PyGui.
+- No Python package adds one: `dearpygui-ext` (2.1.1) and `DearPyGui_Extend` (movable groups, file browser, layout) have no editor.
+
+### What Dear PyGui exposes
+
+- No caret position or selection of an input: nothing in the wrapper takes or returns one.
+- A multiline input scrolls inside a child window it creates itself (`BeginChildEx`). That child isn't a Dear PyGui item, so `get_x_scroll`/`get_y_scroll` can't reach it.
+- Exposed: `mvThemeCol_InputTextCursor` and `no_horizontal_scroll`. Not exposed: Dear ImGui 1.92's `ImGuiInputTextFlags_WordWrap` (there is no `word_wrap` keyword).
+
+### Overlay workaround (not built)
+
+The idea: make the input's `Text` and `FrameBg` colors transparent through an item theme, and draw the background and colored text beneath it at the input's position. The `InputTextEx` facts it relies on:
+
+- Multiline pushes `ImGuiCol_ChildBg` = `FrameBg` and draws into its child window, which renders above the parent window's draw list. So the overlay has to go *under* the input, not over it.
+- The text starts at the frame's min corner plus `FramePadding`, and each line is `g.FontSize` tall. Text uses `ImGuiCol_Text`, but the caret uses `ImGuiCol_InputTextCursor`, so it stays visible over transparent text. Selection rects are drawn before the text.
+- With `ImGuiInputTextFlags_NoHorizontalScroll`, every caret follow sets `state->Scroll.x = 0.0f`. Without it, the box scrolls in quarter-width chunks. An inactive input draws with zero horizontal scroll (the `//draw_scroll.x = state->Scroll.x; // Preserve scroll when inactive?` line is commented out).
+- Vertical scroll is clamped to `max(text height + 2 × FramePadding.y − inner height, 0)`, so it is 0 while the text fits.
+
+Since the scroll can't be read, the overlay is only right while the whole query fits without scrolling: about 12 lines × 80 columns at scale 1 in the default 1200 px window (the box is `scaled(300)` tall, and 24 px JetBrains Mono is about 14.4 px per column). Outside that, the box would fall back to plain text. The 92-column NASA example "Most recent value of a planets parameter" doesn't fit at that width.
+
+- Open risk: after a query shrinks back to fitting, the horizontal scroll can stay non-zero until the next caret move with the flag set.
+- Rejected variant: growing the input to its content inside a scrolling child window. The outer window doesn't follow the caret, and the caret position can't be read to scroll it.
+
+### Other options considered
+
+- A colored read-only view shown in place of the input while it isn't focused, swapped for the input on click. It is robust and works at any size, but shows no colors while typing, and the caret can't be put where the click landed.
+- A custom editor built from drawlist primitives and key handlers. Rejected: too much to reimplement (caret, selection, clipboard, undo, IME).
+- Untested idea for the tokenizer: a small regex lexer for ADQL 2.1 (the SQL keywords plus `TOP`, `CONTAINS`, `POINT`, `CIRCLE` and so on) rather than Pygments' `SqlLexer`, which would be a new dependency. Whether Pygments knows ADQL's functions wasn't checked.
+
+### On a Dear PyGui bump
+
+Check the wrapper for a text or code editor item (`rg -i editor dearpygui.py`, minus the node, style and color editors) and the state of #173.

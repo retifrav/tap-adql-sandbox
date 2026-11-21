@@ -54,6 +54,7 @@ A desktop GUI ([Dear PyGui](https://pypi.org/project/dearpygui/)) for running AD
   - `hint` does nothing on multiline inputs (Dear PyGui clears it).
   - `wrap=0` on a text wraps at the window edge.
   - Lowering the minimum would bring back version branches for all of the above, and Intel Macs would need one, since macOS x86_64 wheels stop at 2.1.1. Ask first.
+- The query input (`queryTextID`) is a plain multiline `add_input_text`, with no syntax highlighting. On 2026-11-21 the user deferred highlighting until Dear PyGui ships a code editor widget, so don't build a workaround unasked. **Before proposing it again, or when bumping Dear PyGui, read the Syntax highlighting section of `.claude/notes/dearpygui.md`**, which has what was checked, the workarounds and their limits, and how the user wants it switched off.
 - On exit Dear PyGui saves window layout to `settings.ini` inside the package directory (`settingsFile`, wired up through `init_file`). The file is gitignored.
 - `--debug` turns on several things:
   - DEBUG logging with timestamps (all logging goes to stdout). Modules log through their own `logger: logging.Logger = logging.getLogger(__name__)`, never through `logging.debug()` and friends (ruff `LOG015`). The `logging.basicConfig` call in `main()` configures the root logger they propagate to, and its format has no `%(name)s`.
