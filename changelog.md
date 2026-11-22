@@ -2,6 +2,7 @@
 
 <!-- MarkdownTOC -->
 
+- [2026.11.22](#20261122)
 - [2026.11.20](#20261120)
 - [0.8.2](#082)
 - [0.8.1](#081)
@@ -18,6 +19,18 @@
 - [0.1.0](#010)
 
 <!-- /MarkdownTOC -->
+
+## 2026.11.22
+
+- explicit timeout for potentially unavailable servers. A server that has fallback mirrors now gets 5 seconds to accept the connection, and if it doesn't, the application falls back to the mirrors instead of waiting for over 2 minutes until the operating system gives up;
+    + that is for SIMBAD at CDS in particular, which [no longer accepts connections](https://github.com/retifrav/tap-adql-sandbox/tree/a505b53da865e359a4e2903e95909f6a58c18233#simbad-at-cds-is-unavailable-since-october-2026) at all;
+- updated NASA Exoplanet Archive example queries:
+    + Cloudflare's firewall in front of the archive [blocks](https://github.com/retifrav/tap-adql-sandbox/tree/a505b53da865e359a4e2903e95909f6a58c18233#queries-might-be-blocked-with-403-forbidden) some perfectly valid queries with `403 Forbidden`;
+        - the error message for such a blocked query now explains what happened and shows the Cloudflare Ray ID of the request;
+    + the NASA archive [no longer accepts](https://github.com/retifrav/tap-adql-sandbox/tree/a505b53da865e359a4e2903e95909f6a58c18233#nasa-exoplanet-archive-no-longer-accepts-with-and-subqueries-in-from) `WITH` and subqueries in `FROM`, so that query example is now implemented with a self-join;
+- fixed the loading animation spinner, which was jerking at the end of every cycle;
+- limited the maximum frame rate to 30 FPS, as Dear PyGui redraws the window on every frame, even when nothing changes;
+- donation window (*Help → Donation*) listing ways of supporting the project.
 
 ## 2026.11.20
 
