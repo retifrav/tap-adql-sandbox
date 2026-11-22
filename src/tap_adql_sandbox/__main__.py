@@ -41,6 +41,7 @@ from .theme import (
     stylePrimaryColor,
     stylePrimaryColorActive,
 )
+from .useragent import addUserAgent
 from .version import __copyright__, __version__
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -171,8 +172,10 @@ def executeQuery() -> None:
             lambda url: pyvo.dal.TAPService(
                 url,
                 # the same session that PyVO creates by default, plus the connect timeout
-                # that `tryMirrors()` gives to the main server
-                session=addConnectTimeout(create_session())
+                # that `tryMirrors()` gives to the main server. That session already has
+                # the application's User-Agent once `useragent.py` is imported, but
+                # `addUserAgent()` makes it explicit instead of relying on the import order
+                session=addConnectTimeout(addUserAgent(create_session()))
             ).search(queryText)
         )
     except Exception as ex:
