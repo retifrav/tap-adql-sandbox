@@ -19,14 +19,26 @@ styleScrollbarWidth: int = 16
 styleFontSize: int = 24
 
 
-def getGlobalFont():
+def loadFont(fileName: str):
     # since Dear PyGui 2.3 glyphs (Cyrillic ones included) are loaded on demand,
     # so the font needs no character range hints
     with dpg.font_registry():
         return dpg.add_font(
-            applicationPath / "fonts" / "JetBrainsMono-Thin.ttf",
+            applicationPath / "fonts" / fileName,
             scaled(styleFontSize)
         )
+
+
+def getGlobalFont():
+    return loadFont("JetBrainsMono-Thin.ttf")
+
+
+# Dear PyGui has no bold style, so bold text is a separate font bound to the item
+# with `bind_item_font`. All weights of JetBrains Mono have the same glyph width
+# and line metrics, so a bold text takes as many columns as the Thin one and sits
+# on the same baseline
+def getBoldFont():
+    return loadFont("JetBrainsMono-Bold.ttf")
 
 
 def getGlobalTheme():

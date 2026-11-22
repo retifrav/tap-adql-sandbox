@@ -60,6 +60,27 @@ Measured on 2026-11-21 with Dear PyGui 2.3.1 on Xvfb (x86_64), with `get_item_re
 - Leading and trailing spaces count in a text's width. With `ItemSpacing.x` = 0, `"… via "`, the hyperlink and `" or …"` touch exactly (375 → 375, 539 → 539), and the gaps look like ordinary spaces.
 - Not tried: `wrap=0` on the text after the hyperlink. Dear ImGui would start the continuation lines at that text's own x, not at the window's left edge, so it can't make the paragraph wrap by itself.
 
+## Fonts
+
+Checked on 2026-11-22 against the 2.3.1 wheel (`dearpygui.py`, the x86_64 `_dearpygui.so`) and the JetBrains Mono 2.225 and 2.304 release zips from GitHub, and measured on Xvfb (x86_64) at `--ui-scale 1` and `2`.
+
+### History
+
+- Until 2026-11-22 the only font was `JetBrainsMono-Thin.ttf`, byte-identical (SHA-256 `e53e5021…c982`) to the one in the 2.225 release (January 2021). The currency names first became bold with that release's Bold, next to the Thin.
+- The same day the user switched the UI font to Regular and asked for the latest release, 2.304 (January 2023, still the latest on GitHub), with Thin deleted from `fonts/`.
+- **Decision**: after looking at all the text in the application in Regular (SHA-256 `a0bf60ef…d138f`), the user found it too bold everywhere and went back to Thin, keeping 2.304. Thin is the preferred UI weight, and Regular is rejected.
+- Shipped now: `JetBrainsMono-Thin.ttf` (270112 bytes, SHA-256 `0756e8e8…ae1b702`) and `JetBrainsMono-Bold.ttf` (277828 bytes, `5590990c…79dcb`), both from `fonts/ttf/` in `JetBrainsMono-2.304.zip`. They are about 100 KB bigger than the 2.225 files because 2.304 has 1743 glyphs against 1213. The 2.225 Thin was committed with mode `100755` in 2022; the 2.304 one replaced it as `100644`, like the icons and the Bold.
+
+### Metrics
+
+- Every weight in 2.225 and 2.304 has 1000 units per em, `hhea` and `OS/2` typo ascent/descent/line gap 1020/−300/0, win ascent/descent 1020/300, and every glyph advance 600, with one exception: in Thin 2.304 U+FF5D (FULLWIDTH RIGHT CURLY BRACKET, glyph `uniFF5D`) has 599, which the UI never shows. So weights and these two releases are interchangeable for layout: same columns, line height and baseline.
+- Switching Thin 2.225 → Regular 2.304 (with Bold 2.225 → 2.304) left the rect of every item identical in the main window (4 items), the Donation window (24) and the About window (11), at scale 1 and at scale 2. So did switching back from Regular 2.304 to Thin 2.304.
+
+### Bold text
+
+- Dear PyGui has no bold style or font flag. `add_font(file, size, …)` takes only `pixel_snapH`/`pixel_snapV` besides the usual item keywords, and `_dearpygui.so` has Dear ImGui's stb_truetype loader (`ImFontAtlasGetFontLoaderForStbTruetype`, `stbtt_*`) and no FreeType, so there is no synthetic bold either: Dear ImGui's `ImGuiFreeTypeLoaderFlags_Bold` exists only in the FreeType loader. A bold text is therefore a second font file bound to the item with `bind_item_font`.
+- Splitting `"- XLM:"` into `"- "`, bold `"XLM"` and `":"` in a `horizontal_spacing=0` group: at scale 1 every rect is identical to the single text (`- XLM:` 15–81, the address button 89–720, both rows). At scale 2 the button moves 1 px right (174 → 175), because each text rounds its own fractional width (about 21.8 px per column there) instead of the whole string's: `"- "` 27–71, `"XLM"` 71–137, `":"` 137–159, against 27–158 before. Nothing lines up with that button, so the pixel was accepted. Measured with the Thin and Bold of 2.225; the metrics above make it hold for 2.304 too, and the switch moved nothing.
+
 ## Headless harness
 
 - `main()` builds the whole UI without a display if `dpg.create_viewport` is patched to raise. All items, handler registries, the font and the themes then exist and can be inspected with `get_item_configuration`, and `executeQuery()` can be driven with a fake `pyvo.dal.TAPService` whose `search()` returns an object with `__len__` and `to_table().to_pandas()`.
