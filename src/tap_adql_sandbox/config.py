@@ -12,6 +12,12 @@ uiScaleMax: float = 4.0
 
 noEnumerationColumn: bool = False
 
+# Dear PyGui redraws the whole viewport every frame, idle or not, at the display's
+# refresh rate (vsync), so `runRenderLoop()` caps it to spare the GPU. The value
+# of 30 divides 60, 120 and 240 Hz evenly, so the frames stay evenly paced
+# on those displays
+frameRateMax: int = 30
+
 # Dear ImGui (which Dear PyGui is built on) asserts that a table has fewer
 # than `IMGUI_TABLE_MAX_COLUMNS` (512) columns, and that counts the artificial
 # enumeration column too:

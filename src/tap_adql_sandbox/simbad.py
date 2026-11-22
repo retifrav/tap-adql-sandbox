@@ -208,10 +208,11 @@ def simbadWindow():
         )
         dpg.add_loading_indicator(
             tag="loadingAnimationSimbadIDs",
-            style=1,
-            radius=1.5,
+            style=dpg.mvLoadInd_Ring,
+            radius=1.3,
+            thickness=1.1,
             # speed=2,
-            indent=scaled(7),
+            indent=scaled(5),
             color=stylePrimaryColorActive,
             secondary_color=stylePrimaryColor,
             show=False

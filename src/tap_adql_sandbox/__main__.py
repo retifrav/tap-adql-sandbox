@@ -7,7 +7,7 @@ import sys
 import traceback
 import typing
 import webbrowser
-from time import sleep
+from time import perf_counter, sleep
 
 # 3rd-party dependencies
 #
@@ -338,6 +338,25 @@ def walletAddressClicked(
     dpg.configure_item(sender, label=address)
 
 
+def runRenderLoop() -> None:
+    """
+    The loop of `dpg.start_dearpygui()` with the frame rate capped at `config.frameRateMax`.
+    Frames are due at fixed intervals, so the time a frame takes doesn't add to the interval.
+    After a frame that took longer than that (such as one waiting for a big results table
+    to be built) the schedule starts over, instead of rendering the missed frames in a burst.
+    """
+    framePeriod: float = 1 / config.frameRateMax
+    nextFrameTime: float = perf_counter()
+    while dpg.is_dearpygui_running():
+        dpg.render_dearpygui_frame()
+        nextFrameTime += framePeriod
+        delay: float = nextFrameTime - perf_counter()
+        if delay > 0:
+            sleep(delay)
+        else:
+            nextFrameTime = perf_counter()
+
+
 def showDPGabout() -> None:
     dpg.hide_item("aboutWindow")
     dpg.show_about()
@@ -577,10 +596,11 @@ def main() -> None:
         )
         dpg.add_loading_indicator(
             tag="loadingAnimation",
-            style=1,
-            radius=2.0,
+            style=dpg.mvLoadInd_Ring,
+            radius=1.75,
+            thickness=1.1,
             # speed=2,
-            indent=scaled(7),
+            indent=scaled(4),
             color=stylePrimaryColorActive,
             secondary_color=stylePrimaryColor,
             show=False
@@ -782,7 +802,8 @@ def main() -> None:
         tapServices["padc"]["examples"][5]["query"]
     )
 
-    dpg.start_dearpygui()
+    # instead of `dpg.start_dearpygui()`, which renders at the display's refresh rate
+    runRenderLoop()
 
     dpg.destroy_context()
 

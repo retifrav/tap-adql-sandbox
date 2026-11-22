@@ -206,3 +206,82 @@ Since the scroll can't be read, the overlay is only right while the whole query 
 ### On a Dear PyGui bump
 
 Check the wrapper for a text or code editor item (`rg -i editor dearpygui.py`, minus the node, style and color editors) and the state of #173.
+
+## Loading indicator
+
+Checked on 2026-11-22 against Dear PyGui's sources at `v2.3.1` (`src/mvLoadingIndicator.h`/`.cpp`, `src/mvLoadingIndicatorCustom.cpp`, `src/dearpygui.cpp`, the viewport and graphics backends) and the 2.3.1 wheel, and measured on Xvfb (x86_64) at `--ui-scale 1` and `2`.
+
+### Styles
+
+- `mvLoadingIndicator::Style` is `Style_OldDottedCircle = 0`, `Style_OldRing = 1`, `Style_DottedCircle = 2`, `Style_Ring = 3`. At runtime `dpg.mvLoadInd_DottedCircle` is 2 and `dpg.mvLoadInd_Ring` is 3 (registered in `src/dearpygui.cpp`). `_dearpygui.pyi` says 0 for both, which is wrong. The `style` keyword defaults to 0, the old dotted circle.
+- Upstream commit `99058f35` (2026-01-04, in 2.3.0): "Old indicator rendering is kept at style=1 for compatibility; new corrected rendering can be selected with style=mvLoadInd_Ring". The app's `style=1` dates from Dear PyGui 1.x (commit `1428135`), where 1 simply meant the ring, so after the bump to 2.3 it silently stayed on the old drawing.
+- `Style_OldRing` is `LoadingIndicatorCircle2`, posted in ocornut/imgui#1901. It rotates at `8t` rad/s, and its tail offset is `start = abs((int)(sin(1.8t) * 25))` thirtieths of a turn. The cast moves the tail in 12° steps. `abs` puts a V-shaped kink where `sin` crosses 0, which is the end of every ~1.75 s cycle, where the arc is longest: there the tail's speed flips from −1.4 to +17.4 rad/s between two frames. That was the jerk the user saw. It takes no `speed`, which is why `# speed=2` was commented out.
+- `Style_Ring` is `LoadingIndicatorRing`, upstream's "corrected version": `t = Time * speed` and `start = 0.5 (1 − sin 3t) * 25` as a float, so the tail's speed, 8 − 7.85 cos 3t rad/s at `speed=1`, varies smoothly between 0.15 and 15.9 rad/s. Upstream's comment on it: "does not have visual artifacts (jitter of the ring tail when it slows down)".
+
+### Geometry
+
+`L` is the text line height, 24 px at scale 1.
+
+- Old ring: the circle is centred `0.38·radius·L` right of the item's x and `FramePadding.y + 0.38·radius·L` below its y. The stroke is `0.12·thickness·radius·L` wide (the `if (t > t * 0.4f) t = t * 0.4f` clamp always applies), and the outer diameter is `0.88·radius·L` at `thickness=1`. So the ring overhangs its item rect by `0.06·radius·L` on the left and at the top.
+- New ring: the box is `radius·L` square and starts at the item's x and `FramePadding.y` below the cursor (`AlignTextToFramePadding`). The ring touches the box on all sides, with a stroke of `thickness·radius·L/8`.
+- Keeping the outline therefore means `radius` × 0.88, `thickness` ≈ 0.96 × old radius / new radius, and an `indent` smaller by `0.06·radius·L`. Chosen: main window 2.0 → 1.75, SIMBAD window 1.5 → 1.3, `thickness=1.1` for both, `indent` `scaled(7)` → `scaled(4)` and `scaled(5)`.
+- Measured as the union of the ring's pixels (green exceeding red and blue by more than half the maximum) over ~2.5 s of frames. The SIMBAD window was placed at `(600, 100)` × scale by the harness:
+
+  | ring box, x × y | old (`style=1`) | new |
+  |---|---|---|
+  | main, scale 1 | 16–58 × 401–443 | 16–58 × 404–446 |
+  | SIMBAD, scale 1 | 617–649 × 196–228 | 617–648 × 198–229 |
+  | main, scale 2 | 32–117 × 802–887 | 32–116 × 808–892 |
+  | SIMBAD, scale 2 | 1234–1297 × 392–455 | 1234–1296 × 396–458 |
+
+  Size and horizontal position match within 1 px. The new ring sits lower by the old one's top overhang: 3 px at scale 1 and 6 at scale 2 for the main window. There is no knob for that: the indicator has no vertical offset, and only an item theme with a smaller `FramePadding.y` would lift it. Nothing lines up with the ring vertically, so it was left. The main window's item rect ends at y = 446 in both versions, so what follows doesn't move.
+
+### Rendering cost
+
+- Dear PyGui renders every frame unconditionally. Each `render_dearpygui_frame()` calls `glfwPollEvents` (`mvViewport_linux.cpp`, `mvViewport_apple.mm`; `PeekMessage` in `mvViewport_win32.cpp`) and redraws the whole UI. Only an iconified window waits (`glfwWaitEvents`), and on macOS an occluded one sleeps 32 ms per frame. The pace is vsync: on Linux `present()` calls `glfwSwapInterval(vsync ? 1 : 0)`, on macOS it sets Metal's `displaySyncEnabled`. `create_viewport`'s `vsync` defaults to true, and the app doesn't pass it.
+- Measured on Xvfb, where Mesa's llvmpipe makes rendering CPU time in the app's own process. Each state ran for 5 s, in two rounds, at scale 1, with the main and SIMBAD windows open. Xvfb has no vblank, so vsync doesn't throttle there: the app ran at ~440 fps on ~10.7 cores. CPU per frame:
+
+  | state | app | Xvfb |
+  |---|---|---|
+  | idle (buttons shown) | 24.18 ms | 0.31–0.32 ms |
+  | old ring spinning | 24.13 ms | 0.32 ms |
+  | new ring spinning | 24.14–24.16 ms | 0.32 ms |
+
+  So the indicator costs less than the noise. The GPU load the user saw is the continuous redraw at the display's refresh rate, which is the same whether or not a query runs. Replacing the spinner with anything else, static text included, would save nothing.
+
+### Power saving (not built)
+
+On 2026-11-22 the user chose to fix the style only and decide about power saving separately, and then asked for the frame rate cap below rather than this. What is known:
+
+- `configure_app(wait_for_input=True)` swaps `glfwPollEvents` for `glfwWaitEvents` (`WaitMessage` on Windows), so an idle window would cost nothing.
+- Nothing in Dear PyGui's 104 `src/*.cpp`/`.h`/`.mm` files at `v2.3.1` calls `glfwPostEmptyEvent`, `PostMessage` or `PostThreadMessage`, so there is no way to wake a waiting loop from Python.
+  - `split_frame()` waits for a frame to end, so it would block while the loop waits.
+  - Setting the flag back to false from the callback thread doesn't wake a loop that is already waiting either.
+  - So everything the callback thread changes would stay unpainted until the next mouse or keyboard event: the indicator, the results, the error texts, and the `[copied]` and cell-highlight reverts after `sleep(1)`.
+- A working version would need its own wake-up, and would render continuously while anything animates (a query, a SIMBAD lookup, a revert) and wait otherwise.
+  - Linux: `glfwPostEmptyEvent`, which GLFW allows from any thread, through `ctypes` on the GLFW bundled in `_dearpygui.so`, as `scaling.py` already does for the content scale. It is exported by the x86_64 wheel; the aarch64 and macOS wheels were not checked.
+  - Windows: `PostThreadMessageW` to the main thread, because that backend doesn't use GLFW.
+### Frame rate cap (built)
+
+Later on 2026-11-22 the user asked for a cap instead, at 30 fps, which Claude also recommended.
+
+- Why 30:
+  - It divides 60, 120 and 240 Hz evenly, so with vsync every frame lands on the same number of refreshes. At 144 Hz frames alternate between 4 and 5 refreshes (27.8 and 34.7 ms), which is visible only as slight judder of the spinner.
+  - It halves the redraws at 60 Hz and quarters them at 120 Hz.
+  - The cost is up to one frame period (33 ms) of extra input latency, and choppier scrolling and window dragging.
+  - Dear ImGui's key repeat (`KeyRepeatRate` 0.05 s, 20 Hz) is slower than 30 fps, so no repeats are lost. The spinner (`g.Time`), the caret blink and double-click detection are time-based, so they keep their speed.
+- `start_dearpygui()` in the 2.3.1 wrapper is only `is_viewport_ok()` and then `while is_dearpygui_running(): render_dearpygui_frame()`. `runRenderLoop()` in `__main__.py` is that loop with a sleep until the next frame is due, and it skips `is_viewport_ok()` because `main()` has just shown the viewport.
+  - Frames are due at fixed intervals, so frame time doesn't add to the interval. After a late frame the schedule restarts instead of bursting.
+  - vsync stays on, so a frame never presents faster than the display, and there is no tearing.
+  - `time.sleep` releases the GIL, which leaves the callback thread more of it.
+- Measured on Xvfb, scale 1, 5 s per state, idle and spinning alike, two rounds:
+  - The frame rate holds at 30.0 (`get_frame_count` over wall time; Dear ImGui's `get_frame_rate()` reads 29–30). The same at scale 2.
+  - A fake query in `executeQuery()` that sleeps 2 s in `search()` got 60 frames during the query. The results table then appeared (3 rows), the button came back, and the exit callback still wrote `settings.ini`.
+- CPU time under llvmpipe is not a proxy for the GPU saving:
+  - With its default 16 raster threads, uncapped ~440 fps took ~1070 % CPU and the 30 fps cap ~410 %. The 16 `llvmpipe-N` threads were ~24 % each at the cap, and the Python main thread 6.5 %. No Dear PyGui thread busy-loops.
+  - With `LP_NUM_THREADS=0`, so that rendering happens in the main thread, uncapped is 57 fps on one core at 16.8 ms per frame, and capped is 30 fps at 69 % at ~23 ms per frame. Per-frame CPU grows once the CPU idles between frames (presumably frequency scaling).
+  - So the saving on a real GPU has to be checked on a real display.
+
+### On a Dear PyGui bump
+
+Check that `Style_Old*` and the `mvLoadInd_*` values are unchanged (`src/mvLoadingIndicator.h`, `src/dearpygui.cpp`). Rerun the outline comparison if `LoadingIndicatorRing` changed. Check that `start_dearpygui()` in `dearpygui.py` is still just the bare loop that `runRenderLoop()` copies. Look for a wake-up, a frame-rate limit or a redraw-on-demand mode in the viewport backends.
