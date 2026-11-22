@@ -29,6 +29,7 @@ from .theme import (
     getBoldFont,
     getCellDefaultTheme,
     getCellHighlightedTheme,
+    getCompactListTheme,
     getCopyableTheme,
     getErrorTheme,
     getGlobalFont,
@@ -687,22 +688,26 @@ def main() -> None:
         copyableTheme = getCopyableTheme()
         copiedTheme = getCopyableTheme(copied=True)
         boldFont = getBoldFont()
-        for currency, address in donationWallets.items():
-            with dpg.group(horizontal=True):
-                # no spacing between these texts, so they read as one "- XLM:"
-                with dpg.group(horizontal=True, horizontal_spacing=0):
-                    dpg.add_text("- ")
-                    currencyText = dpg.add_text(currency)
-                    dpg.bind_item_font(currencyText, boldFont)
-                    dpg.add_text(":")
-                walletButton = dpg.add_button(
-                    label=address,
-                    user_data=(address, copyableTheme, copiedTheme),
-                    callback=walletAddressClicked
-                )
-                dpg.bind_item_theme(walletButton, copyableTheme)
-                with dpg.tooltip(walletButton):
-                    dpg.add_text("Click to copy")
+        with dpg.group() as walletsList:
+            for currency, address in donationWallets.items():
+                with dpg.group(horizontal=True):
+                    # no spacing between these texts, so they read as one "- XLM:"
+                    with dpg.group(horizontal=True, horizontal_spacing=0):
+                        dpg.add_text("- ")
+                        currencyText = dpg.add_text(currency)
+                        dpg.bind_item_font(currencyText, boldFont)
+                        dpg.add_text(":")
+                    walletButton = dpg.add_button(
+                        label=address,
+                        user_data=(address, copyableTheme, copiedTheme),
+                        callback=walletAddressClicked
+                    )
+                    dpg.bind_item_theme(walletButton, copyableTheme)
+                    with dpg.tooltip(walletButton):
+                        dpg.add_text("Click to copy")
+        dpg.bind_item_theme(walletsList, getCompactListTheme())
+        # the list's theme leaves no item spacing after the list, this spacer adds it back
+        dpg.add_spacer()
 
         #dpg.add_spacer(height=scaled(2))
         with dpg.group(horizontal=True):

@@ -13,8 +13,13 @@ stylePrimaryColorActive: tuple[int, int, int] = (30, 140, 0)
 styleSecondaryColor: tuple[int, int, int, int] = (111, 111, 111, 80)
 styleSecondaryColorActive: tuple[int, int, int, int] = (111, 111, 111, 100)
 styleHighlightColor: tuple[int, int, int] = (255, 255, 0)
+# darker than the default white text, to set the copyable wallet addresses apart
+styleCopyableTextColor: tuple[int, int, int] = (140, 140, 140)
 styleHorizontalPadding: int = 12
 styleFramePadding: tuple[int, int] = (10, 6)
+styleItemSpacing: tuple[int, int] = (8, 6)
+# the vertical frame padding of the rows in `getCompactListTheme()`
+styleCompactListFramePadding: int = 3
 styleScrollbarWidth: int = 16
 styleFontSize: int = 24
 
@@ -56,7 +61,7 @@ def getGlobalTheme():
             )
             dpg.add_theme_style(
                 dpg.mvStyleVar_ItemSpacing,
-                scaled(8), scaled(6),
+                scaled(styleItemSpacing[0]), scaled(styleItemSpacing[1]),
                 category=dpg.mvThemeCat_Core
             )
             dpg.add_theme_style(
@@ -262,6 +267,27 @@ def getInlineTheme():
         return inlineTheme
 
 
+# for a list whose rows are a text followed by a button, to make it more compact
+# than separate rows are. The texts and the buttons get the same smaller vertical
+# frame padding, so they stay level, and the rows get no vertical item spacing,
+# so the buttons of adjacent rows touch. Since the theme is still in effect when
+# the list's group ends, the item after the list starts right at its bottom
+def getCompactListTheme():
+    with dpg.theme() as compactListTheme:
+        with dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_style(
+                dpg.mvStyleVar_FramePadding,
+                scaled(styleFramePadding[0]), scaled(styleCompactListFramePadding),
+                category=dpg.mvThemeCat_Core
+            )
+            dpg.add_theme_style(
+                dpg.mvStyleVar_ItemSpacing,
+                scaled(styleItemSpacing[0]), 0,
+                category=dpg.mvThemeCat_Core
+            )
+        return compactListTheme
+
+
 # a button that looks like a text, for copying its label on click
 def getCopyableTheme(copied: bool = False):
     with dpg.theme() as copyableTheme:
@@ -281,10 +307,9 @@ def getCopyableTheme(copied: bool = False):
                 styleSecondaryColorActive,
                 category=dpg.mvThemeCat_Core
             )
-            if copied:
-                dpg.add_theme_color(
-                    dpg.mvThemeCol_Text,
-                    styleHighlightColor,
-                    category=dpg.mvThemeCat_Core
-                )
+            dpg.add_theme_color(
+                dpg.mvThemeCol_Text,
+                styleHighlightColor if copied else styleCopyableTextColor,
+                category=dpg.mvThemeCat_Core
+            )
         return copyableTheme
