@@ -120,22 +120,21 @@ tapServices: dict[str, dict] = {
                 "query": (
                     "SELECT hostname, pl_name, pl_radj, pl_pubdate\n"
                     "FROM ps\n"
-                    "WHERE pl_name = 'Kepler-106 e' AND pl_radj IS NOT NULL\n"
+                    "WHERE pl_radj IS NOT NULL AND pl_name = 'Kepler-106 e'\n"
                     "ORDER BY pl_pubdate DESC"
                 )
             },
             {
                 "description": "Most recent value of a planets parameter",
                 "query": (
-                    "SELECT * FROM\n"
-                    "(WITH latestEntries AS\n"
-                    "\t(SELECT hostname, pl_name, pl_radj,\n"
-                    "\tROW_NUMBER() OVER(\n\t\tPARTITION BY pl_name ORDER BY CASE "
-                    "WHEN pl_radj IS NULL THEN 1 ELSE 0 END, pl_pubdate DESC\n\t) "
-                    "AS rank\n"
-                    "\tFROM ps WHERE hostname = 'Kepler-106')\n"
-                    "SELECT hostname, pl_name, pl_radj FROM latestEntries "
-                    "WHERE rank = 1 ORDER BY pl_name)"
+                    "SELECT a.hostname, a.pl_name, a.pl_radj\n"
+                    "FROM ps a\n"
+                    "JOIN ps b ON b.pl_name = a.pl_name\n"
+                    "WHERE a.pl_radj IS NOT NULL AND b.pl_radj IS NOT NULL\n"
+                    "AND a.hostname = 'Kepler-106'\n"
+                    "GROUP BY a.hostname, a.pl_name, a.pl_radj, a.pl_pubdate\n"
+                    "HAVING a.pl_pubdate = MAX(b.pl_pubdate)\n"
+                    "ORDER BY a.pl_name"
                 )
             }
         ]

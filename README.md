@@ -14,6 +14,8 @@
     - [Application tries to connect to remote hosts on startup and sometimes crashes](#application-tries-to-connect-to-remote-hosts-on-startup-and-sometimes-crashes)
     - [Queries might fail with UnicodeDecodeError](#queries-might-fail-with-unicodedecodeerror)
     - [SIMBAD at CDS is unavailable since October 2026](#simbad-at-cds-is-unavailable-since-october-2026)
+    - [Queries might be blocked with 403 Forbidden](#queries-might-be-blocked-with-403-forbidden)
+    - [NASA Exoplanet Archive no longer accepts WITH and subqueries in FROM](#nasa-exoplanet-archive-no-longer-accepts-with-and-subqueries-in-from)
 - [3rd-party](#3rd-party)
     - [Dependencies](#dependencies)
     - [Resources](#resources)
@@ -153,6 +155,74 @@ That applies to:
 
 - queries to the SIMBAD TAP service, but only when the service URL is exactly the one from the SIMBAD examples (*Help → Examples → SIMBAD*), as any other URL is used as it is. To query a particular mirror, put its URL into the service URL field;
 - the SIMBAD IDs lookup (*Tools → Lookup IDs in Simbad*), which first tries the server configured in Astroquery (*the CDS one by default*), and then the mirrors that Astroquery knows about. With Astroquery `0.4.11` that is only CfA Harvard, the IDIA mirror comes in its next release. This requires Astroquery `0.4.8` or later, older versions will just fail as before.
+
+### Queries might be blocked with 403 Forbidden
+
+Some services, such as [NASA Exoplanet Archive](https://exoplanetarchive.ipac.caltech.edu/), have [Cloudflare](https://cloudflare.com/) in front of their servers, and Cloudflare's firewall blocks some perfectly valid ADQL queries, because to the firewall they look like an SQL injection attack. Such a query fails with:
+
+``` sh
+403 Client Error: Forbidden for url: https://exoplanetarchive.ipac.caltech.edu/TAP/sync
+```
+
+The request never reaches the TAP service, so it is neither an error in the query nor in the application. As of 2026-11-22, the firewall blocks a string literal followed by `AND` or `OR` and then an `IS NULL` or `IS NOT NULL` condition, for example:
+
+``` sql
+WHERE pl_name = 'Kepler-106 e' AND pl_radj IS NOT NULL
+```
+
+Queries with a subquery in `WHERE` were blocked as well, and there are probably other such patterns. Rephrasing the query without changing its meaning usually gets it through, for example by reordering the conditions:
+
+``` sql
+WHERE pl_radj IS NOT NULL AND pl_name = 'Kepler-106 e'
+```
+
+or by writing `AND NOT pl_radj IS NULL` instead of `AND pl_radj IS NOT NULL`.
+
+The application tries to recognize Cloudflare's block page and adds an explanation to the error message, along with the Cloudflare Ray ID of the blocked request. If rephrasing doesn't help, you can try reporting this to the service and refer to that Ray ID in your report.
+
+### NASA Exoplanet Archive no longer accepts WITH and subqueries in FROM
+
+One of the queries examples for NASA used to be the following query:
+
+``` sql
+SELECT * FROM
+(WITH latestEntries AS
+    (SELECT hostname, pl_name, pl_radj,
+    ROW_NUMBER() OVER(
+        PARTITION BY pl_name ORDER BY CASE WHEN pl_radj IS NULL THEN 1 ELSE 0 END, pl_pubdate DESC
+    ) AS rank
+    FROM ps WHERE hostname = 'Kepler-106')
+SELECT hostname, pl_name, pl_radj FROM latestEntries WHERE rank = 1 ORDER BY pl_name)
+```
+
+and it worked fine since the time it was added in January 2022 and for some years after that. But as of 2026-11-22, it fails with:
+
+``` sh
+Table 'latestentries' is not available for querying. Use TAP_SCHEMA.tables to see available tables.
+```
+
+Apparently, it is not the database that rejects it. The database behind the archive's TAP service is Oracle, and it was Oracle back then too (*the archive's [TAP documentation](https://exoplanetarchive.ipac.caltech.edu/docs/TAP/usingTAP.html) has been naming it at least since November 2021*). It still supports everything this query uses: the `ROW_NUMBER() OVER(…)` part, run on its own, works fine. What rejects the query is the TAP service itself. Before passing a query to the database, it checks every table name in the query against `TAP_SCHEMA.tables`, and that check now seems to be checking `latestEntries` too, which is the name of a common table expression (*CTE*) and not an actual table, and it fails as an unknown table. A subquery in `FROM` fails the same way (*`Table '(select' is not available for querying`*), so the query can't be rewritten with one of those either.
+
+Without `WITH` and subqueries, the same result can be had with a self-join, and that is what the example is now:
+
+``` sql
+SELECT a.hostname, a.pl_name, a.pl_radj
+FROM ps a
+JOIN ps b ON b.pl_name = a.pl_name
+WHERE a.pl_radj IS NOT NULL AND b.pl_radj IS NOT NULL
+AND a.hostname = 'Kepler-106'
+GROUP BY a.hostname, a.pl_name, a.pl_radj, a.pl_pubdate
+HAVING a.pl_pubdate = MAX(b.pl_pubdate)
+ORDER BY a.pl_name
+```
+
+For Kepler-106 it returns the same rows as the old query did. In other cases the results might differ: a planet with no `pl_radj` value at all is left out instead of being shown with an empty value, and if two different values share the latest publication date, both of them are returned.
+
+A few more things in this query got a bit of a special treatment too:
+
+- the tables are aliased as `ps a`, not `ps AS a`. That is valid ADQL, but the service passes it to Oracle as it is, and Oracle fails with `ORA-00933: SQL command not properly ended`;
+- the condition with the string literal comes last, because otherwise their [firewall](#queries-might-be-blocked-with-403-forbidden) blocks the query;
+- the `ON` clause has a single condition. With more conditions joined by `AND` in it, the service takes some of them for table names, the same way as with `latestEntries`.
 
 ## 3rd-party
 

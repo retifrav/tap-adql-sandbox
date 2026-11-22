@@ -101,6 +101,34 @@ def keyPressCallback(sender, app_data) -> None:
         executeQuery()
 
 
+def getFirewallBlockHint(ex: Exception) -> str:
+    """
+    Returns an explanation for an HTTP 403 page from Cloudflare, which some services (such as
+    NASA Exoplanet Archive) have in front of them, or an empty string for any other error.
+    PyVO keeps the response body only for `text/plain` errors, so such an HTML page becomes
+    a bare `403 Client Error: Forbidden`. Every response from such a service has `Server: cloudflare`,
+    so only a 403 with an HTML page is taken as a block, while the service's own errors are VOTables.
+    """
+    if not isinstance(ex, pyvo.dal.DALServiceError) or ex.code != 403:
+        return ""
+    response = getattr(ex.cause, "response", None)
+    if (
+        response is None
+        or response.headers.get("Server", "").lower() != "cloudflare"
+        or "text/html" not in response.headers.get("Content-Type", "")
+    ):
+        return ""
+    return (
+        "The request was blocked by Cloudflare (the firewall in front of this service) "
+        "most likely because to the firewall the query looks like an SQL injection attack, "
+        "such as a string literal followed by AND or OR and then an IS NULL "
+        "or IS NOT NULL condition. Try to rephrase the query, for example by reordering "
+        "the conditions in WHERE. If that doesn't help, you can report the block "
+        "to the service by referring its Cloudflare Ray ID: "
+        f"{response.headers.get('CF-RAY', 'unknown')}."
+    )
+
+
 def executeQuery() -> None:
     global lastQueryResults
 
@@ -141,7 +169,11 @@ def executeQuery() -> None:
         )
     except Exception as ex:
         logger.debug(f"Query failed: {ex}")
-        dpg.set_value("errorMessage", ex)
+        firewallBlockHint: str = getFirewallBlockHint(ex)
+        dpg.set_value(
+            "errorMessage",
+            f"{ex}\n\n{firewallBlockHint}" if firewallBlockHint else ex
+        )
         dpg.show_item("errorMessage")
         showLoading(False)
         return
