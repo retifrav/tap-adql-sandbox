@@ -6,7 +6,7 @@ Evidence behind the mirror fallback rules in `CLAUDE.md`. Gathered on 2026-11-20
 
 - CDS (Strasbourg) has a cybersecurity incident and took its servers offline on purpose. The announcement on `https://simbad.cds.unistra.fr/` ("Last updated November 09, 2026") and `https://cds.unistra.fr/` ("Last updated November 18, 2026") gives no cause and no restore date. Both pages list the fallbacks.
 - Start date: CDS doesn't state one. The earliest public reports found are from 28–30 Oct 2026, for example skyfielders/python-skyfield#1155, opened 2026-10-30 about `cdsarc.cds.unistra.fr` not answering. astropy/astroquery#3701 ("CDS Mirrors") was opened 2026-11-02 and merged 2026-11-12. Its commit `a3a96d5` (2026-11-03) added `simbad.idia.ac.za` to `servers_list`, and that's not in any release yet.
-- On 2026-11-20 every path on `simbad.cds.unistra.fr` returns HTTP 404 with a CDS "Page unavailable" HTML page (Last-Modified 2026-11-10), over both http and https. That includes `/simbad/`, `/simbad/sim-tap/sync`, `/simbad/sim-tap/capabilities`, and the old app URL `…/sim-tap/sync/sync`.
+- On 2026-11-20 every path on `simbad.cds.unistra.fr` returned HTTP 404 with a CDS "Page unavailable" HTML page (Last-Modified 2026-11-10), over both http and https. That included `/simbad/`, `/simbad/sim-tap/sync`, `/simbad/sim-tap/capabilities`, and the old app URL `…/sim-tap/sync/sync`. By 2026-11-22 it no longer accepted connections at all, see the connect timeout section below.
 - The mirrors, both official and listed by CDS:
   - CfA Harvard: `https://simbad.cfa.harvard.edu/simbad/sim-tap/`, "data ingested up to 2026-10-14". `simbad.harvard.edu` serves the same over https directly, while `http://simbad.cfa.harvard.edu` answers with a 301 to https.
   - IDIA (South Africa): `https://simbad.idia.ac.za/simbad/sim-tap/`.
@@ -32,6 +32,23 @@ The hierarchy: `DALAccessError` ← `DALProtocolError` ← `DALServiceError` (�
 - 0.4.8–0.4.11: `conf.servers_list = ['simbad.cds.unistra.fr', 'simbad.harvard.edu']`. The `Simbad.server` setter raises `ValueError` for anything not in `conf.servers_list`, and `SimbadClass.__init__` takes `conf.server`. On main (2026-11-10), IDIA has been added, plus `find_mirror=`/`find_fastest_mirror()` and a `simbad_server=` constructor argument, all unreleased.
 - `conf.server` is a list-option `ConfigItem`, so astropy only accepts values from the list. CDS's fallback page suggests `server = simbad.cfa.harvard.edu` in `astroquery.cfg`, which isn't in the 0.4.11 list, so that config can't reach the app's code without failing inside astroquery first.
 - Before 0.4.8 astroquery used the sim-script interface and had no `server` property. Setting it is inert there, and its errors aren't pyvo ones, so there's no fallback: it fails as before.
+
+## CDS stopped answering: the connect timeout (2026-11-22)
+
+Measured on 2026-11-22 with pyvo 1.10.0, astroquery 0.4.11, requests 2.34.2 and urllib3 2.8.0, on the x86_64 container on the Arch host.
+
+- The 404 from 2026-11-20 is gone. `simbad.cds.unistra.fr` still resolves (a CNAME to `www-cds.cds.unistra.fr`, 130.79.129.14, no AAAA record), but a TCP connect on 443 or on 80 never completes. curl `--max-time 40` ended with exit 28 and `time_connect=0`. In the meantime the mirrors connected in 0.11 s (`simbad.cfa.harvard.edu`), 0.13 s (`simbad.harvard.edu`) and 0.24 s (IDIA, after a 0.69 s DNS lookup), and the whole `/capabilities` request took 0.32/0.34/1.43 s.
+- Without a timeout, a plain `TAPService(cds).search(…)` raised `DALFormatError: ConnectTimeout` after **136.4 s**. That is the kernel's SYN retransmissions (`net.ipv4.tcp_syn_retries = 6` here). Other OSes give up after a different time.
+- Nobody sets a network timeout. pyvo's `TAPQuery.submit` (`session.post(url, data=…, stream=True, files=…)`) and the VOSI GET in `vosi.py` pass none, and requests has no session-level default. astroquery's `Simbad.timeout` / `conf.timeout` (1080) is `execution_duration` for async jobs, a server-side limit, not a network timeout. `Simbad.tap` builds `TAPService(baseurl=…, session=self._session)`, and `_session` is a `requests.Session` from `BaseQuery` in 0.4.6, 0.4.7 and 0.4.11 alike.
+- urllib3 applies the connect part of a `(connect, read)` pair to the TCP connect, the TLS handshake and sending the request (`conn.timeout = connect_timeout`, `connectionpool.py` line 465). It switches to the read part only before waiting for the response (line 536). `HTTPAdapter`'s default `max_retries` is 0, so a connect timeout is not retried. DNS resolution is not covered by either part.
+- Measured with the implementation, from the built wheel:
+  - With 5 s, CDS failed after 5.01 s. The TAP query raised `DALFormatError: ConnectTimeout … (connect timeout=5)`. The first SIMBAD-window lookup raised `DALServiceError: Unable to access the capabilities endpoint …`, and the second raised `DALFormatError` from `/sync`, because astroquery caches `Simbad._hardlimit` after the first mirror answers.
+  - Every fallback took 5.1–5.5 s in total: the TAP example, a bad ADQL query (still `DALQueryError` from Harvard, IDIA not tried) and two "Vega" lookups (65 IDs).
+- The main-server-only rule was checked three ways:
+  - a single-server `[cds]` list was still waiting after 15 s;
+  - CDS placed second of three (as a mirror) was still waiting after 15 s;
+  - a fake `attempt` saw the ContextVar as `[5, None, None]` for three servers and `[None]` for one, and `None` again after a success, a fallback and an escaping `ValueError`.
+- The read side stays unlimited: a heavy `COUNT(*)` join sent to Harvard with the 5 s limit in force ran until Harvard's own gateway answered `504 Gateway Time-out` at 60.3 s. So Harvard's sync endpoint has a gateway limit of about 60 s, and a 504 is a `DALServiceError` that falls back to the next mirror.
 
 ## Verification on 2026-11-20
 

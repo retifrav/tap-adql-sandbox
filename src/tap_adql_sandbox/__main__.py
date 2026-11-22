@@ -15,13 +15,14 @@ import dearpygui.dearpygui as dpg
 import pandas
 import pyvo
 from dearpygui.demo import show_demo
+from pyvo.utils.http import create_session
 from tabulate import tabulate
 
 # own stuff
 #
 from . import applicationPath, config, settingsFile
 from .examples import tapServices
-from .mirrors import getTapServiceMirrors, tryMirrors
+from .mirrors import addConnectTimeout, getTapServiceMirrors, tryMirrors
 from .scaling import getContentScale, scaled
 from .simbad import showSimbadIDsWindow, simbadWindow
 from .theme import (
@@ -166,7 +167,12 @@ def executeQuery() -> None:
     try:
         results = tryMirrors(
             [serviceURL] + getTapServiceMirrors(serviceURL),
-            lambda url: pyvo.dal.TAPService(url).search(queryText)
+            lambda url: pyvo.dal.TAPService(
+                url,
+                # the same session that PyVO creates by default, plus the connect timeout
+                # that `tryMirrors()` gives to the main server
+                session=addConnectTimeout(create_session())
+            ).search(queryText)
         )
     except Exception as ex:
         logger.debug(f"Query failed: {ex}")

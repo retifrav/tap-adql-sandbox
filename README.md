@@ -133,10 +133,10 @@ If query results from a TAP service contain non-ASCII symbols, then PyVO will ra
 
 ### SIMBAD at CDS is unavailable since October 2026
 
-Since late October 2026 (*the first reports are from 28-30 October*) [CDS](https://cds.unistra.fr/) in Strasbourg has been dealing with a cybersecurity incident, and as part of that it took its servers offline, SIMBAD included. As of 2026-11-20 they are still down, and every request to `simbad.cds.unistra.fr` gets a 404 page, so queries fail with:
+Since late October 2026 (*the first reports are from 28-30 October*) [CDS](https://cds.unistra.fr/) in Strasbourg has been dealing with a cybersecurity incident, and as part of that it took its servers offline, SIMBAD included. As of 2026-11-22 they are still down, and `simbad.cds.unistra.fr` doesn't even accept connections anymore (*until 2026-11-20 it was at least answering with a 404 page*), so a query hangs until the operating system gives up on connecting (*over 2 minutes on GNU/Linux*), and then fails with:
 
 ``` sh
-DALServiceError: 404 Client Error: Not Found for url: https://simbad.cds.unistra.fr/simbad/sim-tap/sync
+DALFormatError: ConnectTimeout: HTTPSConnectionPool(host='simbad.cds.unistra.fr', port=443): Max retries exceeded with url: /simbad/sim-tap/sync
 ```
 
 SIMBAD hasn't moved anywhere, it is just temporarily unavailable, and in the meantime CDS [suggests](https://cds.unistra.fr/) using its official mirrors:
@@ -144,12 +144,14 @@ SIMBAD hasn't moved anywhere, it is just temporarily unavailable, and in the mea
 - [CfA Harvard](https://simbad.cfa.harvard.edu/simbad/), TAP service at `https://simbad.cfa.harvard.edu/simbad/sim-tap` (*contains data ingested up to 2026-10-14*);
 - [IDIA](https://simbad.idia.ac.za/) (*South Africa*), TAP service at `https://simbad.idia.ac.za/simbad/sim-tap`.
 
-So the application still tries the main SIMBAD server first every time (*in case it is back*), and if that fails, it falls back to the mirrors, printing a message about that to stdout:
+So the application still tries the main SIMBAD server first every time (*in case it is back*), giving it 5 seconds to accept the connection, and if that fails, it falls back to the mirrors, printing a message about that to stdout:
 
 ``` sh
-[WARNING] [https://simbad.cds.unistra.fr/simbad/sim-tap] is unavailable, falling back to [https://simbad.cfa.harvard.edu/simbad/sim-tap]. DALServiceError: 404 Client Error: Not Found for url: https://simbad.cds.unistra.fr/simbad/sim-tap/sync
+[WARNING] [https://simbad.cds.unistra.fr/simbad/sim-tap] is unavailable, falling back to [https://simbad.cfa.harvard.edu/simbad/sim-tap]. DALFormatError: ConnectTimeout: HTTPSConnectionPool(host='simbad.cds.unistra.fr', port=443): Max retries exceeded with url: /simbad/sim-tap/sync (Caused by ConnectTimeoutError(<HTTPSConnection(host='simbad.cds.unistra.fr', port=443) at 0x7fcf88e7ee40>, 'Connection to simbad.cds.unistra.fr timed out. (connect timeout=5)'))
 [INFO] Got results from the mirror [https://simbad.cfa.harvard.edu/simbad/sim-tap]
 ```
+
+Those 5 seconds are only for connecting, waiting for the results is not limited, so a long query still runs to the end once the main server is back. The mirrors aren't limited.
 
 That applies to:
 
@@ -232,6 +234,7 @@ A few more things in this query got a bit of a special treatment too:
 - [Dear PyGui](https://pypi.org/project/dearpygui/) - application window and UI controls
 - [PyVO](https://pypi.org/project/pyvo/) - handling TAP ADQL requests
 - [Astroquery](https://pypi.org/project/astroquery/) - looking up IDs in Simbad
+- [requests](https://pypi.org/project/requests/) - HTTP timeout implementation, comes through PyVO and Astroquery anyway
 - [pandas](https://pypi.org/project/pandas/) - processing results and saving to pickle
 - [tabulate](https://pypi.org/project/tabulate/) - printing results to stdout (*with `--debug`*)
 - transitive (*dependencies of dependencies*):

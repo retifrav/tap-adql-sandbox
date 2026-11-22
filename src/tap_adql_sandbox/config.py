@@ -12,6 +12,15 @@ uiScaleMax: float = 4.0
 
 noEnumerationColumn: bool = False
 
+# how long (in seconds) the main server of a service with mirrors gets to accept
+# the connection before `tryMirrors()` falls back to its mirrors. Neither PyVO
+# nor astroquery sets a timeout of its own, so without it a server that silently
+# drops connections (as SIMBAD at CDS does since November 2026) makes every query
+# wait out the operating system's connect timeout, which can be over 2 minutes.
+# It is only a connect timeout: waiting for the response stays unlimited, so a long
+# query on a server that is up is never cut off. Mirrors get no such limit
+mainServerConnectTimeout: float = 5
+
 # Dear PyGui redraws the whole viewport every frame, idle or not, at the display's
 # refresh rate (vsync), so `runRenderLoop()` caps it to spare the GPU. The value
 # of 30 divides 60, 120 and 240 Hz evenly, so the frames stay evenly paced

@@ -14,11 +14,18 @@ from tabulate import tabulate
 # own stuff
 #
 from . import config
-from .mirrors import tryMirrors
+from .mirrors import addConnectTimeout, tryMirrors
 from .scaling import scaled
 from .theme import stylePrimaryColor, stylePrimaryColorActive
 
 logger: logging.Logger = logging.getLogger(__name__)
+
+# for the connect timeout that `tryMirrors()` gives to the main server. Astroquery has
+# no setting for network timeouts (`Simbad.timeout` is the time limit for executing
+# asynchronous queries on the server), but `Simbad.tap` creates its PyVO service
+# with this session. It is a private attribute of astroquery's `BaseQuery`, which every
+# astroquery service has had for years
+addConnectTimeout(Simbad._session)
 
 
 def querySimbadIDs(server: str, objectID: str):

@@ -26,6 +26,7 @@ allowed-unresolved-imports = [
     "dearpygui.**",
     "pandas.**",
     "pyvo.**",
+    "requests.**",
     "setuptools.**",
     "tabulate.**"
 ]
